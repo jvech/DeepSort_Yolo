@@ -128,132 +128,132 @@ def main(_argv):
     cont = 0
 
     # Write Yolo features from each frame to `images.tfrecords`.
-    record_file = 'Test.tfrecords'
-    with tf.io.TFRecordWriter(record_file) as writer:
-        while True:
-            _, img = vid.read()
+    #record_file = 'Test.tfrecords'
+    #with tf.io.TFRecordWriter(record_file) as writer:
+    while True:
+        _, img = vid.read()
 
-            if img is None:
-                logging.warning("Empty Frame")
-                time.sleep(0.1)
-                break
+        if img is None:
+            logging.warning("Empty Frame")
+            time.sleep(0.1)
+            break
 
-            # print(cont)
-            img_in = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img_in = tf.expand_dims(img_in, 0)
-            img_in = transform_images(img_in, FLAGS.size)
+        # print(cont)
+        img_in = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_in = tf.expand_dims(img_in, 0)
+        img_in = transform_images(img_in, FLAGS.size)
 
-            t1 = time.time()
+        t1 = time.time()
 
-            # use model to predict object bboxes
-            t1 = time.time()
-            ind, boxes, scores, classes, nums, feat = yolo(img_in)
-            t2 = time.time()
-            times.append(t2-t1)
-            times = times[-20:]
+        # use model to predict object bboxes
+        t1 = time.time()
+        ind, boxes, scores, classes, nums, feat = yolo(img_in)
+        t2 = time.time()
+        times.append(t2-t1)
+        times = times[-20:]
 
-            # initialize our lists of detected bounding boxes, confidences,
-            # and class IDs, respectively
-            bboxes_p = []
-            confidences = []
-            classIDs = []
-            feat_track = []
-            scales = []
-            ids = []
+        # initialize our lists of detected bounding boxes, confidences,
+        # and class IDs, respectively
+        bboxes_p = []
+        confidences = []
+        classIDs = []
+        feat_track = []
+        scales = []
+        ids = []
 
-            # feature pre-location
-            feat_all = []
-            conti = 0
+        # feature pre-location
+        feat_all = []
+        conti = 0
 
-            for j, indi in enumerate(ind):
-                if indi is not None:
-                    for i in indi:
-                        classID = int(classes[0][int(i[4])])
-                        if class_names[classID] == "car" or class_names[classID] == "truck":
-                            sco = np.array(scores[0][int(i[4])])
-                            box_p = np.array(boxes[0][int(i[4])])
-                            # logging.info('\t{}, {}, {}'.format(class_names[classID],
-                            #                                    sco,box_p))
+        for j, indi in enumerate(ind):
+            if indi is not None:
+                for i in indi:
+                    classID = int(classes[0][int(i[4])])
+                    if class_names[classID] == "car" or class_names[classID] == "truck":
+                        sco = np.array(scores[0][int(i[4])])
+                        box_p = np.array(boxes[0][int(i[4])])
+                        # logging.info('\t{}, {}, {}'.format(class_names[classID],
+                        #                                    sco,box_p))
 
-                            # Feature extraction
-                            x, y = np.array(i[1:3])
-                            feat_1 = feat[j][:, x, y, :][0]
-                            feat_track.append(feat_1)
-                            feat_all.append(np.concatenate([feat_1,
-                                                  tf.expand_dims(classes[0][int(i[4])], 0), # object class
-                                                  tf.expand_dims(i[4], 0)], axis=0)) # id object in frame
+                        # Feature extraction
+                        x, y = np.array(i[1:3])
+                        feat_1 = feat[j][:, x, y, :][0]
+                        feat_track.append(feat_1)
+                        feat_all.append(np.concatenate([feat_1,
+                                              tf.expand_dims(classes[0][int(i[4])], 0), # object class
+                                              tf.expand_dims(i[4], 0)], axis=0)) # id object in frame
 
-                            # objects allocation
-                            ids.append(conti)
-                            conti += 1
-                            scales.append(j)
-                            confidences.append(float(sco))
-                            bboxes_p.append(box_p)
-                            classIDs.append(classID)
+                        # objects allocation
+                        ids.append(conti)
+                        conti += 1
+                        scales.append(j)
+                        confidences.append(float(sco))
+                        bboxes_p.append(box_p)
+                        classIDs.append(classID)
 
-            # save output image
-            # img2 = draw_output(img, (bboxes_p,confidences,classIDs,ids,
-            #                       scales), class_names)
-            # cv2.imshow('output', img2)
-            # key = cv2.waitKey(0) & 0xFF
-            # if key == ord('q'):
-            #     break
-            if FLAGS.save:
-                # Save features to TFRecord
-                if feat_all:
-                    t_feat_all = tf.convert_to_tensor(feat_all)
-                    # Process the frames into `tf.Example` messages.
-                    tf_example = frame_example(t_feat_all, cont)
-                    # Write to a `.tfrecords` file.
-                    writer.write(tf_example.SerializeToString())
+        # save output image
+        # img2 = draw_output(img, (bboxes_p,confidences,classIDs,ids,
+        #                       scales), class_names)
+        # cv2.imshow('output', img2)
+        # key = cv2.waitKey(0) & 0xFF
+        # if key == ord('q'):
+        #     break
+        if FLAGS.save:
+            # Save features to TFRecord
+            if feat_all:
+                t_feat_all = tf.convert_to_tensor(feat_all)
+                # Process the frames into `tf.Example` messages.
+                tf_example = frame_example(t_feat_all, cont)
+                # Write to a `.tfrecords` file.
+                writer.write(tf_example.SerializeToString())
 
-            # ensure at least one detection exists
-            if bboxes_p:
+        # ensure at least one detection exists
+        if bboxes_p:
 
-                # if cont == 46:
-                #     print(cont)
-                # feed deepsort with detections and features
-                tracker, detections_class = deepsort.run_deep_sort(img, np.asarray(bboxes_p),
-                                                                  confidences,
-                                                                  classIDs, scales,
-                                                                  ids, feat_track)
-                classIDs_nms = detections_class[1]
-                scales_nms = detections_class[2]
-                ids_nms = detections_class[3]
-                # prelocation employed detections
-                boxes_nms = []
-                sco_nms = []
-                for det in detections_class[0]:
-                    # Append NMS detection boxes
-                    boxes_nms.append(det.to_tlbr())
-                    sco_nms.append(det.confidence)
+            # if cont == 46:
+            #     print(cont)
+            # feed deepsort with detections and features
+            tracker, detections_class = deepsort.run_deep_sort(img, np.asarray(bboxes_p),
+                                                              confidences,
+                                                              classIDs, scales,
+                                                              ids, feat_track)
+            classIDs_nms = detections_class[1]
+            scales_nms = detections_class[2]
+            ids_nms = detections_class[3]
+            # prelocation employed detections
+            boxes_nms = []
+            sco_nms = []
+            for det in detections_class[0]:
+                # Append NMS detection boxes
+                boxes_nms.append(det.to_tlbr())
+                sco_nms.append(det.confidence)
 
-                # prelocation of tracked boxes
-                boxes_ds = []
-                id_ds = []
-                for track in tracker.tracks:
-                    if not track.is_confirmed() or track.time_since_update > 1:
-                        continue
-                    #Append boxes and id.
-                    boxes_ds.append(track.to_tlbr())   #Get the corrected/predicted bounding box
-                    id_ds.append(str(track.track_id))  #Get the ID for the particular track.
+            # prelocation of tracked boxes
+            boxes_ds = []
+            id_ds = []
+            for track in tracker.tracks:
+                if not track.is_confirmed() or track.time_since_update > 1:
+                    continue
+                #Append boxes and id.
+                boxes_ds.append(track.to_tlbr())   #Get the corrected/predicted bounding box
+                id_ds.append(str(track.track_id))  #Get the ID for the particular track.
 
-            # save output image
-            img = draw_YOLO(img, (boxes_nms, sco_nms, classIDs_nms, ids_nms,
-                                  scales_nms), class_names)
-            if boxes_ds:
-                img = draw_DS(img, boxes_ds, id_ds)
-            img = cv2.putText(img, "Time: {:.2f}ms, frame:{:d}".format(sum(times)/len(times)*1000, cont), (0, 30),
-                              cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        # save output image
+        img = draw_YOLO(img, (boxes_nms, sco_nms, classIDs_nms, ids_nms,
+                              scales_nms), class_names)
+        if boxes_ds:
+            img = draw_DS(img, boxes_ds, id_ds)
+        img = cv2.putText(img, "Time: {:.2f}ms, frame:{:d}".format(sum(times)/len(times)*1000, cont), (0, 30),
+                          cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
 
-            if FLAGS.output:
-                out.write(img)
-            cv2.imshow('output', img)
-            key = cv2.waitKey(100) & 0xFF
-            if key == ord('q'):
-                break
-            cont += 1
-        cv2.destroyAllWindows()
+        if FLAGS.output:
+            out.write(img)
+        cv2.imshow('output', img)
+        key = cv2.waitKey(100) & 0xFF
+        if key == ord('q'):
+            break
+        cont += 1
+    cv2.destroyAllWindows()
 
 # Initialize code
 if __name__ == '__main__':
