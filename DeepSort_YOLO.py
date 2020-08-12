@@ -1,12 +1,5 @@
 '''
 DeepSort Yolo algorithm in sklearn/tensorflow keras.
-
-Usage:  1) install requirements (conda recommended).
-        2) for terminal execution: python detect.py
-        3) from spyder, open detect.py and run file.
-
-The yolo model is created using the Functional API from tensorflow keras.
-
 '''
 
 
@@ -15,6 +8,8 @@ Que falta:
 
     3) determinar el tamaño del hypercolumn
 '''
+from absl import flags
+from absl.flags import FLAGS
 import time
 from absl import app, logging
 import cv2
@@ -59,21 +54,18 @@ def frame_example(raw, frame):
   return tf.train.Example(features=tf.train.Features(feature=feature))
 
 
-# Data object with settings
-FLAGS = type('', (), {})()
-FLAGS.classes = './data/coco.names'
-# change weights file if using tiny_yolo (weights trained using COCO DB)
-FLAGS.weights = './checkpoints/yolov3.tf'
-# set to "True" if using tiny_yolo
-FLAGS.tiny = False
-FLAGS.size = 416
-FLAGS.num_classes = 80
-FLAGS.save = None # flag for saving features
-
-# for video
-FLAGS.video = './input/vdo.avi'
-FLAGS.output = []
-FLAGS.output_format = 'XVID'
+flags.DEFINE_string('video','/home/jorge/Desktop/DeepSort_YOLO_Hypercolumn/input/vdo.avi',
+                     'path to video file')
+flags.DEFINE_string('classes', './data/coco.names',
+                     'path to file with db names')
+flags.DEFINE_string('weights', '/home/jorge/Desktop/yolov3-tf2-master/checkpoints/yolov3.tf',
+                     'path to file with network name')
+flags.DEFINE_integer('size', 416, 'size of network input')
+flags.DEFINE_integer('num_classes', 80, 'Number of classes to recognize')
+flags.DEFINE_boolean('save', False, 'if true, saves yolo-features')
+flags.DEFINE_string('output', './data/coco.names',
+                     'path to output video file')
+flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 
 # Main code
 def main(_argv):
