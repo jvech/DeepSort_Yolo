@@ -63,7 +63,7 @@ flags.DEFINE_string('weights', '/home/jorge/Desktop/yolov3-tf2-master/checkpoint
 flags.DEFINE_integer('size', 416, 'size of network input')
 flags.DEFINE_integer('num_classes', 80, 'Number of classes to recognize')
 flags.DEFINE_boolean('save', False, 'if true, saves yolo-features')
-flags.DEFINE_string('output', './data/coco.names',
+flags.DEFINE_string('output', 'data/out.csv',
                      'path to output video file')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 

@@ -8,7 +8,7 @@ import numpy as np
 class deepsort_rbc():
     def __init__(self):
 
-        self.metric = nn_matching.NearestNeighborDistanceMetric("cka",.5,30) #metric, matching_threshold, budget
+        self.metric = nn_matching.NearestNeighborDistanceMetric("cosine",.5,30) #metric, matching_threshold, budget
         self.tracker= Tracker(self.metric)
 
 
