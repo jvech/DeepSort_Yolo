@@ -58,7 +58,7 @@ flags.DEFINE_string('video','/home/jorge/Desktop/DeepSort_YOLO_Hypercolumn/input
                      'path to video file')
 flags.DEFINE_string('classes', './data/coco.names',
                      'path to file with db names')
-flags.DEFINE_string('weights', '/home/jorge/Desktop/yolov3-tf2-master/checkpoints/yolov3.tf',
+flags.DEFINE_string('weights', 'data/yolov3_model/yolov3.tf',
                      'path to file with network name')
 flags.DEFINE_integer('size', 416, 'size of network input')
 flags.DEFINE_integer('num_classes', 80, 'Number of classes to recognize')
