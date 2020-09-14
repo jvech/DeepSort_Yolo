@@ -1,10 +1,18 @@
 import cv2
 import tkinter as tk
-from tkinter import W, E, S, N, filedialog
+from tkinter import filedialog
 from PIL import Image, ImageTk
+import numpy as np
 
 class App:
     def __init__(self, master):
+        # Constantes
+        self.MODE_IMG = 0
+        self.MODE_VIDEO = 1
+        self.MODE_STREAM = 2
+        self.IMG_WIDTH = 796
+        self.IMG_HEIGHT = 597
+
         #Ventana principal
         self.window = master
         self.window.title = "MAIN WINDOW"
@@ -26,28 +34,37 @@ class App:
         self.MainMenu.add_cascade(label="File", menu=self.FileMenu)
 
         master.config(menu=self.MainMenu)
-        
+
+        # Frames
+        self.FrameLeft = tk.Frame(master, relief=tk.RAISED, bg="black")
+        self.FrameRight = tk.Frame(master)
+        self.FrameLeft.pack(side=tk.LEFT, padx=5)
+        self.FrameRight.pack(side=tk.LEFT)
         # Botones
+        self.ButtonReproduce = tk.Button(self.FrameLeft, text="\uf04b") # 
+        self.ButtonStop = tk.Button(self.FrameLeft, text="\uf04d") # 
+        self.ButtonPause = tk.Button(self.FrameLeft, text="\uf04c") # 
+        self.ButtonRecord = tk.Button(self.FrameLeft, text="\uf94a") # 壘
+        
+        self.ButtonReproduce.grid(row=0, column=0, padx=5, pady=5)
+        self.ButtonPause.grid(row=0, column=1, padx=5, pady=5)
+        self.ButtonStop.grid(row=0, column=2, padx=5, pady=5)
+        self.ButtonRecord.grid(row=1, column=0, padx=5, pady=5)
         # Image Options
         # Video Options
-        self.Button_probe = tk.Button(master, text="Prueba")
-        self.Button_probe.grid(row=0, column=0, padx=5, pady=5)
         # Stream Options
         # Canvas
 
-        self.CanvasMainImage = tk.Canvas(master, width=796, height=591)
+        self.CanvasMainImage = tk.Canvas(
+                                    self.FrameRight, 
+                                    width=self.IMG_WIDTH, 
+                                    height=self.IMG_HEIGHT)
         self.CanvasMainImage.grid(
-                row=0, column=1,
+                row=0, column=0,
                 padx=10, pady=10,
-                sticky=W+S,
+                sticky=tk.W + tk.S,
                 )
 
-        # Constantes
-        self.MODE_IMG = 0
-        self.MODE_VIDEO = 1
-        self.MODE_STREAM = 2
-        self.IMG_WIDHT = 796
-        self.IMG_HEIGHT = 597
 
         # Variables internas
         self.photo = None
@@ -62,31 +79,53 @@ class App:
 
     # Funciones generales 
     def show(self):
+        fps = 25
         if self.mode == self.MODE_IMG:
-            img = cv2.imread(self.filepath)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = cv2.resize(
-                    img, dsize=(self.IMG_WIDHT, self.IMG_WIDHT), 
-                    fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(img))
-            self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
+            try:
+                self.caption.release()
+            except AttributeError:
+                pass
 
-        elif self.mode == self.MODE_STREAM or self.mode == self.MODE_VIDEO:
-            ret, frame = self.caption.read()
-            frame = cv2.resize(
-                    frame, dsize=(self.IMG_WIDHT, self.IMG_WIDHT), 
-                    fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+            frame = cv2.imread(self.filepath)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-            self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
+            frame = cv2.resize(
+                            frame, 
+                            dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
+                            interpolation=cv2.INTER_AREA)
 
-        elif self.mode == None:
-            pass
-        
+        elif self.mode == self.MODE_STREAM: 
+            ret, frame = self.caption.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(
+                            frame, 
+                            dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
+                            interpolation=cv2.INTER_AREA)
+
+        elif self.mode == self.MODE_VIDEO: 
+            fps = self.caption.get(cv2.CAP_PROP_FPS)
+            ret, frame = self.caption.read()
+            if ret == True:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(
+                                frame, 
+                                dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
+                                interpolation=cv2.INTER_AREA)
+            else:
+                self.mode = None
+
         else:
             ValueError(f"invalid self.mode value: {self.mode}")
 
-        self.window.after(40, self.show)
+        if self.mode == None:
+            frame = np.zeros((self.IMG_HEIGHT,self.IMG_WIDTH,3), dtype=np.uint8)
+            try:
+                self.caption.release()
+            except AttributeError:
+                pass
+
+        self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+        self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
+        self.window.after(int(1000 * (1/fps)), self.show)
 
     
     # Funciones widgets 
@@ -97,7 +136,10 @@ class App:
         """Open Image"""
         self.filepath = filedialog.askopenfilename(
                     initialdir="./",
-                    title="Select File",)
+                    title="Select File",
+                    filetypes = (
+                        ("jpg files", "*.jpg"), 
+                        ("png files", "*.png"),))
 
         self.mode = self.MODE_IMG
 
@@ -105,7 +147,11 @@ class App:
         """Open Video"""
         self.filepath = filedialog.askopenfilename(
                     initialdir="./",
-                    title="Select File")
+                    title="Select File", 
+                    filetypes = (
+                        ("avi files", "*.avi"),
+                        ("mp4 files", "*.mp4"),))
+
 
         self.mode = self.MODE_VIDEO
         self.caption = cv2.VideoCapture(self.filepath)
@@ -114,8 +160,6 @@ class App:
         """Open Video"""
         self.mode = self.MODE_STREAM
         self.caption = cv2.VideoCapture(0)
-        
-
 
     # Botones
 
