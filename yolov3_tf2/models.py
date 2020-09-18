@@ -1,5 +1,3 @@
-from absl import flags
-from absl.flags import FLAGS
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -22,10 +20,9 @@ from tensorflow.keras.losses import (
 )
 from .utils import broadcast_iou
 
-flags.DEFINE_integer('yolo_max_boxes', 100,
-                     'maximum number of boxes per image')
-flags.DEFINE_float('yolo_iou_threshold', 0.5, 'iou threshold')
-flags.DEFINE_float('yolo_score_threshold', 0.5, 'score threshold')
+YOLO_MAX_BOXES = 100
+YOLO_IOU_THRESHOLD = 0.5
+YOLO_SCORE_THRESHOLD = 0.5
 
 yolo_anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                          (59, 119), (116, 90), (156, 198), (373, 326)], np.float32) / 416
@@ -268,10 +265,10 @@ def yolo_nms(outputs, anchors, masks, classes):
         boxes=tf.reshape(bbox, (tf.shape(bbox)[0], -1, 1, 4)),
         scores=tf.reshape(
             scores, (tf.shape(scores)[0], -1, tf.shape(scores)[-1])),
-        max_output_size_per_class=FLAGS.yolo_max_boxes,
-        max_total_size=FLAGS.yolo_max_boxes,
-        iou_threshold=FLAGS.yolo_iou_threshold,
-        score_threshold=FLAGS.yolo_score_threshold
+        max_output_size_per_class=YOLO_MAX_BOXES,
+        max_total_size=YOLO_MAX_BOXES,
+        iou_threshold=YOLO_IOU_THRESHOLD,
+        score_threshold=YOLO_SCORE_THRESHOLD
     )
 
     # mask = tf.greater(boxes,0)
