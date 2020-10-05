@@ -54,18 +54,21 @@ def frame_example(raw, frame):
   return tf.train.Example(features=tf.train.Features(feature=feature))
 
 
-flags.DEFINE_string('video','/home/jorge/Desktop/DeepSort_YOLO_Hypercolumn/input/vdo.avi',
+flags.DEFINE_string('video',"./videos_test/TUD-Stadtmitte.avi",
                      'path to video file')
 flags.DEFINE_string('classes', './data/coco.names',
                      'path to file with db names')
-flags.DEFINE_string('weights', 'data/yolov3_model/yolov3.tf',
+flags.DEFINE_string('weights', './weights/yolov3.tf',
                      'path to file with network name')
 flags.DEFINE_integer('size', 416, 'size of network input')
 flags.DEFINE_integer('num_classes', 80, 'Number of classes to recognize')
 flags.DEFINE_boolean('save', False, 'if true, saves yolo-features')
-flags.DEFINE_string('output', 'data/out.csv',
+flags.DEFINE_string('output', './data/output.avi',
                      'path to output video file')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
+flags.DEFINE_boolean('show', True, 'if true, show the video') 
+
+
 
 # Main code
 def main(_argv):
@@ -108,7 +111,9 @@ def main(_argv):
         fps = int(vid.get(cv2.CAP_PROP_FPS))
         codec = cv2.VideoWriter_fourcc(*"MJPG")
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
-
+        
+        list_file = open('detection.txt', 'w') #######
+        
     # try to determine the total number of frames in the video file
     try:
         prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
@@ -151,7 +156,7 @@ def main(_argv):
         t2 = time.time()
         times.append(t2-t1)
         times = times[-20:]
-
+        fps = 1.0 / (t2- t1)	
         # initialize our lists of detected bounding boxes, confidences,
         # and class IDs, respectively
         bboxes_p = []
@@ -169,7 +174,7 @@ def main(_argv):
             if indi is not None:
                 for i in indi:
                     classID = int(classes[0][int(i[4])])
-                    if class_names[classID] == "car" or class_names[classID] == "truck":
+                    if class_names[classID] == "person" or class_names[classID] == "person":
                         sco = np.array(scores[0][int(i[4])])
                         box_p = np.array(boxes[0][int(i[4])])
                         # logging.info('\t{}, {}, {}'.format(class_names[classID],
@@ -206,6 +211,7 @@ def main(_argv):
                 tf_example = frame_example(t_feat_all, cont)
                 # Write to a `.tfrecords` file.
                 writer.write(tf_example.SerializeToString())
+               
 
         # ensure at least one detection exists
         if bboxes_p:
@@ -237,6 +243,7 @@ def main(_argv):
                 #Append boxes and id.
                 boxes_ds.append(track.to_tlbr())   #Get the corrected/predicted bounding box
                 id_ds.append(str(track.track_id))  #Get the ID for the particular track.
+                #poner aqui la generación del txt para medir el rendimiento s
 
         # save output image
         img = draw_YOLO(img, (boxes_nms, sco_nms, classIDs_nms, ids_nms,
@@ -245,14 +252,32 @@ def main(_argv):
             img = draw_DS(img, boxes_ds, id_ds)
         img = cv2.putText(img, "Time: {:.2f}ms, frame:{:d}".format(sum(times)/len(times)*1000, cont), (0, 30),
                           cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
-
+                          
+        print("FPS: %.2f" % fps)
+        
+        
+        boxes_tracking = np.array([track.to_tlwh() for track in tracker.tracks])
+        identificadores = np.array([track.track_id for track in tracker.tracks])
+        #clas_ = np.array([track.get_class() for track in tracker.tracks])
+        #boxes_tracking = boxes_tracking[clas_=='person']
+        #identificadores = identificadores[clas_=='person']
+        
+        
         if FLAGS.output:
             out.write(img)
-        cv2.imshow('output', img)
-        key = cv2.waitKey(100) & 0xFF
-        if key == ord('q'):
-            break
-        cont += 1
+            
+            #list_file.write(str(frame_index)+' ')
+            if len(boxes_tracking) != 0:
+                for i in range(0,len(boxes_tracking)):
+                    list_file.write(str(cont)+' '+ str(identificadores[i]) + ' '+str(boxes_tracking[i][0]) + ' '+str(boxes_tracking[i][1]) + ' '+str(boxes_tracking[i][2]) + ' '+str(boxes_tracking[i][3]) + ' ')
+                    list_file.write('\n')
+                    
+        if FLAGS.show:
+            cv2.imshow('output', img)
+            key = cv2.waitKey(100) & 0xFF
+            if key == ord('q'):
+                break
+            cont += 1
     cv2.destroyAllWindows()
 
 # Initialize code
