@@ -1,6 +1,5 @@
 ## Tutorial de instalación 
 
-### En su maquina local 
 
 #### Instalación con conda 
 
@@ -31,19 +30,4 @@ wget https://pjreddie.com/media/files/yolov3.weights -O weights/yolov3.weights
 # yolov3
 python load_weights.py
 ```
-Si está usando el sistema operativo Windows descargue los peros [aquí](https://pjreddie.com/media/files/yolov3.weights) y muevalo a la carpeta *weights*
 
-### En la nube(Colab y Kaggle)
-
-Para correr el sistema en la nube simplemente ejecute las siguientes lineas para preparar el entorno
-
-
-
-
-```python
-!git clone https://github.com/aguirrejuan/Seguimiento-de-objetivos.git
-%cd /content/Seguimiento-de-objetivos/
-!pip install -r requirements-gpu.txt
-!wget https://pjreddie.com/media/files/yolov3.weights -O weights/yolov3.weights
-!python load_weights.py
-```
