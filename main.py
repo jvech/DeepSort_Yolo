@@ -3,7 +3,8 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import numpy as np
-
+from classDeepSort import DeepSort
+from yolov3_tf2.utils import draw_YOLO, draw_DS
 class App:
     def __init__(self, master):
         # Constantes
@@ -44,13 +45,13 @@ class App:
         # Botones
         self.ButtonReproduce = tk.Button(self.FrameLeft, 
                                          command=self.button_reproduce,
-                                         text="\uf04b") # 
+                                         text="PLAY") # 
         self.ButtonStop = tk.Button(self.FrameLeft, 
                                     command=self.button_stop,
-                                    text="\uf04d") # 
+                                    text="STOP") # 
         self.ButtonPause = tk.Button(self.FrameLeft, 
                                      command=self.button_pause,
-                                     text="\uf04c") # 
+                                     text="PAUSE") # 
         self.ButtonRecord = tk.Button(self.FrameLeft, text="\uf94a") # 壘
         
         self.ButtonReproduce.grid(row=0, column=0, padx=5, pady=5)
@@ -79,68 +80,90 @@ class App:
         self.photo = None
         self.caption = None
         self.mode = None
+        self.fps = 25
+        
+        
+        #variable de tracker 
+        self.tracker = DeepSort() 
+        self.typeTracker = True          
+        
+        #variables para guardar 
+        self.saveAnnotations = None 
+        self.saveVideo = None 
+        
+        #variables mode 
+        self.modeFunction = None 
+        
 
         # Main
-        self.show()
+        self.update()
         self.window.mainloop()
-        self.window.destroy()
+        
+        #all the things tha you need to close put here 
+        
+        # Solución problema de cierre de ventana 
+        try:
+            self.window.destroy()
+        except:
+            pass
 
+    def update(self):
+        """Función para actualizar en screen
+        poner todo lo que se requiera actualizar"""   
+        
+        
+        # modeFunction: imagen, video o streaming
+        # actializa frame cargando desde la fuente  
+        if self.modeFunction != None and self.MODE_VIDEO_REPRODUCE:
+            self.modeFunction()
+            self.trackdetec()
 
-    # Funciones generales 
-    def show(self):
-        fps = 25
-        if self.mode == self.MODE_IMG:
-            try:
-                self.caption.release()
-            except AttributeError:
-                pass
-
-            self.frame = cv2.imread(self.filepath)
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            self.frame = cv2.resize(
-                            self.frame, 
-                            dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
-                            interpolation=cv2.INTER_AREA)
-
-        elif self.mode == self.MODE_STREAM: 
-            ret, self.frame = self.caption.read()
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            self.frame = cv2.resize(
-                            self.frame, 
-                            dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
-                            interpolation=cv2.INTER_AREA)
-
-        elif self.mode == self.MODE_VIDEO: 
-            fps = self.caption.get(cv2.CAP_PROP_FPS)
-            ret, self.frame = self.video_handler()
-            if ret == True:
-                self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-                self.frame = cv2.resize(
-                                self.frame, 
+           
+        self.frame = cv2.resize(self.frame, 
                                 dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
                                 interpolation=cv2.INTER_AREA)
-            else:
-                self.mode = None
-
-        else:
-            ValueError(f"invalid self.mode value: {self.mode}")
-
-        if self.mode == None:
-            try:
-                self.caption.release()
-            except AttributeError:
-                pass
-
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(self.frame))
         self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
-        self.window.after(int(1000 * (1/fps)), self.show)
+        self.window.after(int(1000 * (1/self.fps)), self.update)
+        
+        
+    def trackdetec(self):
+        """Actualiza frame con detecciones o tracks """
+        boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = self.tracker(self.frame)
+        if self.typeTracker:    
+            self.frame = draw_DS(self.frame, boxes_ds, id_ds)    # para pintar el traker 
+        else:
+            self.frame = draw_YOLO(self.frame, (boxes_nms, sco_nms, classIDs_nms, ids_nms, # para pintar el detector 
+                              scales_nms), class_names)
+    	
 
+    def modeimage(self):
+        """Actualiza frame con imagen cargada"""
+        try:
+            self.caption.release()
+        except AttributeError:
+            pass
+        self.frame = cv2.imread(self.filepath)
+        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+        
+    def modevideo(self):
+        self.fps = self.caption.get(cv2.CAP_PROP_FPS)
+        ret, self.frame = self.video_handler()
+        if ret == True:
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+        else:
+            self.mode = None
+
+    def modestream(self):
+        ret, self.frame = self.caption.read()
+        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+    
+                  
     def video_handler(self):
         if self.MODE_VIDEO_REPRODUCE or self.photo == None:
             return self.caption.read()
         else:
             return True, cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-
 
 
     # Funciones widgets 
@@ -157,6 +180,12 @@ class App:
                         ("png files", "*.png"),))
 
         self.mode = self.MODE_IMG
+        self.typeTracker = False
+        
+        
+        self.modeFunction =  self.modeimage
+        self.tracker.deepsort.reset_tracker()
+        
 
     def filemenu_openv(self):
         """Open Video"""
@@ -166,15 +195,23 @@ class App:
                     filetypes = (
                         ("avi files", "*.avi"),
                         ("mp4 files", "*.mp4"),))
-
-
+                        
         self.mode = self.MODE_VIDEO
         self.caption = cv2.VideoCapture(self.filepath)
+        
+        
+        self.modeFunction =  self.modevideo
+        self.tracker.deepsort.reset_tracker()
 
     def filemenu_opens(self):
         """Open Stream"""
         self.mode = self.MODE_STREAM
         self.caption = cv2.VideoCapture(0)
+	
+	self.modeFunction = self.modestream
+        self.tracker.deepsort.reset_tracker()
+        
+        
 
     # Botones
     def button_reproduce(self):
@@ -187,11 +224,10 @@ class App:
         if self.mode == self.MODE_VIDEO:
             self.caption = cv2.VideoCapture(self.filepath)
             self.MODE_VIDEO_REPRODUCE = True
-
+            
 
 
 if __name__=="__main__":
     root = tk.Tk()
     app = App(root)
-    #root.mainloop()
-    #root.destroy()
+
