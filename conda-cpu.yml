@@ -1,0 +1,15 @@
+name: deepsort-cpu
+
+dependencies:
+  - python==3.7
+  - pip
+  - matplotlib
+  - pip:
+    - tensorflow==2.3
+    - lxml
+    - opencv-python==4.1.1.26
+    - tqdm
+    - seaborn
+    - pillow
+    - imutils 
+    - tensorflow-probability
