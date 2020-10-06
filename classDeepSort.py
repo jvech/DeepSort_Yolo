@@ -129,6 +129,13 @@ class DeepSort:
                         classIDs.append(classID)
 
 
+        classIDs_nms = []
+        scales_nms = []
+        ids_nms = []
+        boxes_nms = []
+        sco_nms = []
+        boxes_ds = []
+        id_ds = []
         # ensure at least one detection exists
         if bboxes_p:
 
@@ -143,16 +150,13 @@ class DeepSort:
             scales_nms = detections_class[2]
             ids_nms = detections_class[3]
             # prelocation employed detections
-            boxes_nms = []
-            sco_nms = []
             for det in detections_class[0]:
                 # Append NMS detection boxes
                 boxes_nms.append(det.to_tlbr())
                 sco_nms.append(det.confidence)
 
             # prelocation of tracked boxes
-            boxes_ds = []
-            id_ds = []
+
             for track in tracker.tracks:
                 if not track.is_confirmed() or track.time_since_update > 1:
                     continue
