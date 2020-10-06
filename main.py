@@ -195,7 +195,7 @@ class App:
 
     def filemenu_openi(self):
         """Open Image"""
-        self.filepath = filedialog.askopenfilename(
+        filepath = filedialog.askopenfilename(
                     initialdir="./",
                     title="Select File",
                     filetypes = (
@@ -203,6 +203,7 @@ class App:
                         ("png files", "*.png"),))
                         
         if filepath[-3:] in ["jpg", "png"]:
+            self.MODE_VIDEO_REPRODUCE = True
             self.filepath = filepath
             self.modeFunction =  self.modeimage
             self.tracker.deepsort.reset_tracker()
@@ -218,6 +219,7 @@ class App:
                         ("mp4 files", "*.mp4"),))
                         
         if filepath[-3:] in ["avi", "mp4"]:
+            self.MODE_VIDEO_REPRODUCE = True
             self.filepath = filepath
             self.caption = cv2.VideoCapture(self.filepath)
             self.modeFunction =  self.modevideo
@@ -225,6 +227,7 @@ class App:
 
     def filemenu_opens(self):
         """Open Stream"""
+        self.MODE_VIDEO_REPRODUCE = True
         self.caption = cv2.VideoCapture(0)
         self.modeFunction = self.modestream
         self.tracker.deepsort.reset_tracker()
