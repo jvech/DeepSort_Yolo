@@ -5,6 +5,20 @@ from PIL import Image, ImageTk
 import numpy as np
 from classDeepSort import DeepSort
 from yolov3_tf2.utils import draw_YOLO, draw_DS
+import os 
+
+"""
+Cosas por hacer:
+
+-> actualizar la funciones draw_YOLO para que muestre clase y score 
+
+-> agregar boton de stop para cerrar los archivos a guardar 
+
+
+
+"""
+
+
 class App:
     def __init__(self, master):
         # Constantes
@@ -46,18 +60,26 @@ class App:
         self.ButtonReproduce = tk.Button(self.FrameLeft, 
                                          command=self.button_reproduce,
                                          text="PLAY") # 
-        self.ButtonStop = tk.Button(self.FrameLeft, 
-                                    command=self.button_stop,
-                                    text="STOP") # 
+        #self.ButtonStop = tk.Button(self.FrameLeft, 
+        #                            command=self.button_stop,
+        #                            text="STOP") # 
         self.ButtonPause = tk.Button(self.FrameLeft, 
                                      command=self.button_pause,
                                      text="PAUSE") # 
-        self.ButtonRecord = tk.Button(self.FrameLeft, text="\uf94a") # 壘
+        #self.ButtonRecord = tk.Button(self.FrameLeft, text="\uf94a") # 壘
         
-        self.ButtonReproduce.grid(row=0, column=0, padx=5, pady=5)
-        self.ButtonPause.grid(row=0, column=1, padx=5, pady=5)
-        self.ButtonStop.grid(row=0, column=2, padx=5, pady=5)
-        self.ButtonRecord.grid(row=1, column=0, padx=5, pady=5)
+        self.checkboxDec = tk.Checkbutton(self.FrameLeft, text="Detector",command= self.toggleDetector)
+        self.checkboxDec.grid(row=0, column=0, padx=5, pady=5)
+        self.checkboxDec.select()
+        self.checkboxTra = tk.Checkbutton(self.FrameLeft, text="Tracker",command= self.toggleTracker)
+        self.checkboxTra.grid(row=0, column=1, padx=5, pady=5)
+        self.checkboxTra.select()        
+        
+        self.ButtonReproduce.grid(row=1, column=0, padx=5, pady=5)
+        self.ButtonPause.grid(row=1, column=1, padx=5, pady=5)
+        
+        #self.ButtonStop.grid(row=0, column=2, padx=5, pady=5)
+        #self.ButtonRecord.grid(row=1, column=0, padx=5, pady=5)
         # Image Options
         # Video Options
         self.MODE_VIDEO_REPRODUCE = True  
@@ -76,23 +98,25 @@ class App:
 
 
         # Variables internas
-        self.frame = np.zeros((self.IMG_HEIGHT,self.IMG_WIDTH,3),dtype=np.uint8)
+        self.frame = None#np.zeros((self.IMG_HEIGHT,self.IMG_WIDTH,3),dtype=np.uint8)
         self.photo = None
         self.caption = None
-        self.mode = None
+        self.mode = self.MODE_IMG
         self.fps = 25
+        self.filepath = os.path.join('data','girl.png')
         
         
         #variable de tracker 
         self.tracker = DeepSort() 
-        self.typeTracker = True          
+        self.typeTracker = True # True si se quiere usar como tracker
+        self.typeDetector = True #True si se quiere usar como detector           
         
         #variables para guardar 
         self.saveAnnotations = None 
         self.saveVideo = None 
         
         #variables mode 
-        self.modeFunction = None 
+        self.modeFunction = self.modeimage #por default 
         
 
         # Main
@@ -114,15 +138,15 @@ class App:
         
         # modeFunction: imagen, video o streaming
         # actializa frame cargando desde la fuente  
-        if self.modeFunction != None and self.MODE_VIDEO_REPRODUCE:
+        if self.MODE_VIDEO_REPRODUCE:
             self.modeFunction()
             self.trackdetec()
 
            
-        self.frame = cv2.resize(self.frame, 
+        self.photo = cv2.resize(self.frame, 
                                 dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
                                 interpolation=cv2.INTER_AREA)
-        self.photo = ImageTk.PhotoImage(image=Image.fromarray(self.frame))
+        self.photo = ImageTk.PhotoImage(image=Image.fromarray(self.photo))
         self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
         self.window.after(int(1000 * (1/self.fps)), self.update)
         
@@ -132,7 +156,7 @@ class App:
         boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = self.tracker(self.frame)
         if self.typeTracker:    
             self.frame = draw_DS(self.frame, boxes_ds, id_ds)    # para pintar el traker 
-        else:
+        if self.typeDetector:
             self.frame = draw_YOLO(self.frame, (boxes_nms, sco_nms, classIDs_nms, ids_nms, # para pintar el detector 
                               scales_nms), class_names)
     	
@@ -148,11 +172,13 @@ class App:
         
     def modevideo(self):
         self.fps = self.caption.get(cv2.CAP_PROP_FPS)
-        ret, self.frame = self.video_handler()
+        ret, frame = self.video_handler()
         if ret == True:
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
-            self.mode = None
+            self.MODE_VIDEO_REPRODUCE = False 
+        	
+        
 
     def modestream(self):
         ret, self.frame = self.caption.read()
@@ -172,19 +198,16 @@ class App:
 
     def filemenu_openi(self):
         """Open Image"""
-        filepath = filedialog.askopenfilename(
+        self.filepath = filedialog.askopenfilename(
                     initialdir="./",
                     title="Select File",
                     filetypes = (
                         ("jpg files", "*.jpg"), 
                         ("png files", "*.png"),))
-
+                        
         if filepath[-3:] in ["jpg", "png"]:
             self.filepath = filepath
             self.mode = self.MODE_IMG
-            self.typeTracker = False
-            
-            
             self.modeFunction =  self.modeimage
             self.tracker.deepsort.reset_tracker()
         
@@ -199,12 +222,9 @@ class App:
                         ("mp4 files", "*.mp4"),))
                         
         if filepath[-3:] in ["avi", "mp4"]:
-            self.mode = self.MODE_VIDEO
             self.filepath = filepath
+            self.mode = self.MODE_VIDEO
             self.caption = cv2.VideoCapture(self.filepath)
-            self.typeTracker = True
-            
-            
             self.modeFunction =  self.modevideo
             self.tracker.deepsort.reset_tracker()
 
@@ -212,7 +232,6 @@ class App:
         """Open Stream"""
         self.mode = self.MODE_STREAM
         self.caption = cv2.VideoCapture(0)
-
         self.modeFunction = self.modestream
         self.tracker.deepsort.reset_tracker()
         
@@ -225,10 +244,13 @@ class App:
     def button_pause(self):
         self.MODE_VIDEO_REPRODUCE = False
 
-    def button_stop(self):
-        if self.mode == self.MODE_VIDEO:
-            self.caption = cv2.VideoCapture(self.filepath)
-            self.MODE_VIDEO_REPRODUCE = True
+
+    #functions check boxes 
+    def toggleDetector(self):
+        self.typeDetector = not self.typeDetector
+    def toggleTracker(self):
+        self.typeTracker = not self.typeTracker 
+    
             
 
 
