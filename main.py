@@ -22,9 +22,6 @@ Cosas por hacer:
 class App:
     def __init__(self, master):
         # Constantes
-        self.MODE_IMG = 0
-        self.MODE_VIDEO = 1
-        self.MODE_STREAM = 2
         self.IMG_WIDTH = 796
         self.IMG_HEIGHT = 597
 
@@ -98,10 +95,9 @@ class App:
 
 
         # Variables internas
-        self.frame = None#np.zeros((self.IMG_HEIGHT,self.IMG_WIDTH,3),dtype=np.uint8)
+        self.frame = None
         self.photo = None
         self.caption = None
-        self.mode = self.MODE_IMG
         self.fps = 25
         self.filepath = os.path.join('data','girl.png')
         
@@ -153,7 +149,8 @@ class App:
         
     def trackdetec(self):
         """Actualiza frame con detecciones o tracks """
-        boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = self.tracker(self.frame)
+        if self.typeDetector or self.typeTracker: 
+            boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = self.tracker(self.frame)
         if self.typeTracker:    
             self.frame = draw_DS(self.frame, boxes_ds, id_ds)    # para pintar el traker 
         if self.typeDetector:
@@ -207,7 +204,6 @@ class App:
                         
         if filepath[-3:] in ["jpg", "png"]:
             self.filepath = filepath
-            self.mode = self.MODE_IMG
             self.modeFunction =  self.modeimage
             self.tracker.deepsort.reset_tracker()
         
@@ -223,14 +219,12 @@ class App:
                         
         if filepath[-3:] in ["avi", "mp4"]:
             self.filepath = filepath
-            self.mode = self.MODE_VIDEO
             self.caption = cv2.VideoCapture(self.filepath)
             self.modeFunction =  self.modevideo
             self.tracker.deepsort.reset_tracker()
 
     def filemenu_opens(self):
         """Open Stream"""
-        self.mode = self.MODE_STREAM
         self.caption = cv2.VideoCapture(0)
         self.modeFunction = self.modestream
         self.tracker.deepsort.reset_tracker()
