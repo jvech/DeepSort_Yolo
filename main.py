@@ -172,43 +172,48 @@ class App:
 
     def filemenu_openi(self):
         """Open Image"""
-        self.filepath = filedialog.askopenfilename(
+        filepath = filedialog.askopenfilename(
                     initialdir="./",
                     title="Select File",
                     filetypes = (
                         ("jpg files", "*.jpg"), 
                         ("png files", "*.png"),))
 
-        self.mode = self.MODE_IMG
-        self.typeTracker = False
-        
-        
-        self.modeFunction =  self.modeimage
-        self.tracker.deepsort.reset_tracker()
+        if filepath[-3:] in ["jpg", "png"]:
+            self.filepath = filepath
+            self.mode = self.MODE_IMG
+            self.typeTracker = False
+            
+            
+            self.modeFunction =  self.modeimage
+            self.tracker.deepsort.reset_tracker()
         
 
     def filemenu_openv(self):
         """Open Video"""
-        self.filepath = filedialog.askopenfilename(
+        filepath = filedialog.askopenfilename(
                     initialdir="./",
                     title="Select File", 
                     filetypes = (
                         ("avi files", "*.avi"),
                         ("mp4 files", "*.mp4"),))
                         
-        self.mode = self.MODE_VIDEO
-        self.caption = cv2.VideoCapture(self.filepath)
-        
-        
-        self.modeFunction =  self.modevideo
-        self.tracker.deepsort.reset_tracker()
+        if filepath[-3:] in ["avi", "mp4"]:
+            self.mode = self.MODE_VIDEO
+            self.filepath = filepath
+            self.caption = cv2.VideoCapture(self.filepath)
+            self.typeTracker = True
+            
+            
+            self.modeFunction =  self.modevideo
+            self.tracker.deepsort.reset_tracker()
 
     def filemenu_opens(self):
         """Open Stream"""
         self.mode = self.MODE_STREAM
         self.caption = cv2.VideoCapture(0)
-	
-	self.modeFunction = self.modestream
+
+        self.modeFunction = self.modestream
         self.tracker.deepsort.reset_tracker()
         
         

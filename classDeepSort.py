@@ -45,7 +45,7 @@ class DeepSort:
     def __init__(self,num_classes=80,
                  size = 416, classes = './data/coco.names',
                  detectorTiny = False ,
-                 weights = './weights/yolov3.tf'):
+                 weights = './data/yolov3_model/yolov3.tf'):
                  
         #constantes
         self.num_classes = num_classes
