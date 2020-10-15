@@ -10,7 +10,7 @@ import os
 """
 Cosas por hacer:
 
--> actualizar la funciones draw_YOLO para que muestre clase y score 
+-> actualizar la funciones draw_YOLO para que muestre clase y score (listo)
 
 -> agregar boton de stop para cerrar los archivos a guardar 
 
