@@ -8,6 +8,16 @@ from yolov3_tf2.utils import draw_YOLO, draw_DS
 import os 
 from datetime import datetime
 
+"""
+Tareas por hacer:
+
+-> Corregir guardado de las imagenes
+-> definir que hacer con los checkbox 
+-> Acomodar la clase system para que reciba las entradas de los checkbox
+
+
+"""
+
 
 class App:
     def __init__(self, master):
@@ -102,8 +112,12 @@ class App:
     def update(self): 
         if self.MODE_VIDEO_REPRODUCE or self.system.frameindex == 0:
             self.system()
-            
-        self.photo = cv2.resize(self.system.drawTracker(), 
+        
+        if self.system.typeSource == 'IMAGE':
+        	image = self.system.drawDetector()
+        else:
+        	image = self.system.drawTracker()
+        self.photo = cv2.resize(image, 
                                 dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
                                 interpolation=cv2.INTER_AREA)
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(self.photo))
@@ -154,8 +168,16 @@ class App:
         self.MODE_VIDEO_REPRODUCE = False
 
     def button_record(self):
+    
+    	self.system.realeaseFile()
     	if self.system.SAVE == False:
     		self.system.initSave()
+    		
+    	if self.system.SAVE == False and self.system.typeSource == 'IMAGE':
+    		self.system.save()
+    		self.system.realeaseFile()
+    		self.system.SAVE = not  self.system.SAVE
+    		
     	self.system.SAVE = not  self.system.SAVE
     	self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
     	
@@ -173,7 +195,8 @@ class System:
 		self.frame = cv2.imread('./data/logo.png')
 		self.empty = False
 		self.SAVE = False
-		self.frameindex = 0 
+		self.frameindex = 0
+		self.typeSource = None
 		
 	def reset(self,source,typeSource):
 		try:
@@ -207,9 +230,8 @@ class System:
 				self.frameindex += 1 
 				if self.SAVE == True:
 					self.save()
-				
 		except: 
-			pass 
+			pass
 	
 	def drawDetector(self):
 		if self.empty == True:
@@ -236,10 +258,16 @@ class System:
 		if self.typeSource != 'IMAGE':
 			self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
 		else:
-			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".jpg"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+			
 		
 	def save_annotations(self):
+		if self.typeSource == 'IMAGE':
+			self.boxes_ds = self.boxes 
+			self.id_ds = np.zeros((1,len(self.boxes)))		
+		
 		for bbox, id_, scor, classId in zip(self.boxes_ds, self.id_ds, self.sco, self.classIDs):
+			print(bbox)
 			x, y = bbox[0], bbox[1]
 			w, h = bbox[2] - x, bbox[3] - y
 			score = int(100*scor)
@@ -247,17 +275,20 @@ class System:
                     "%d,%d,%d,%d,%d,%d,%d,%d\n"\
                     %(self.frameindex, int(id_), x, y, w, h, score, classId)
                     )
-		
-	def initSave(self):
+	
+	def realeaseFile(self):
 		try:
 			self.annotations_file.close()
 			self.out_video.release()
 		except:
 			pass
+		
+	def initSave(self):
+		self.realeaseFile()
 		path = os.path.join("output",str(datetime.now())[:-7]+".csv")
 		self.annotations_file = open(path, "w")
 		self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
-                        
+			       
 		if self.typeSource != 'IMAGE':
 			fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 			video_path = path[:-3]+"avi"
