@@ -11,10 +11,7 @@ from datetime import datetime
 """
 Tareas por hacer:
 
--> Corregir guardado de las imagenes
--> definir que hacer con los checkbox 
--> Acomodar la clase system para que reciba las entradas de los checkbox
-
+-> cambiar color de la interfaz 
 
 """
 
@@ -25,6 +22,8 @@ class App:
         self.IMG_WIDTH = 640
         self.IMG_HEIGHT = 480
         self.FPS = 25
+        
+        self.system = System()
 
         #Ventana principal
         self.window = master
@@ -57,30 +56,15 @@ class App:
 
         # Botones
         self.ButtonReproduce = tk.Button(self.FrameLeft, 
-                                         command=self.button_reproduce,
+                                         command= self.button_reproduce,
                                          text="PLAY") # 
-        self.ButtonPause = tk.Button(self.FrameLeft, 
-                                     command=self.button_pause,
-                                     text="PAUSE") # 
         self.ButtonRecord = tk.Button(self.FrameLeft, text="START RECORDING",
-                                      command=self.button_record) # 壘
+                                      command= self.button_record ) # 壘
 
         self.ButtonReproduce.grid(row=1, column=0, padx=5, pady=5)
-        self.ButtonPause.grid(row=1, column=1, padx=5, pady=5)
         self.ButtonRecord.grid(row=2, column=0, padx=5, pady=5)
         
-        
-        #Check Buttons
-        self.checkboxDec = tk.Checkbutton(self.FrameLeft, text="Detector",
-                                          command=self.toggleDetector)
-        self.checkboxTra = tk.Checkbutton(self.FrameLeft, text="Tracker",
-                                          command= self.toggleTracker)
-
-        self.checkboxDec.grid(row=0, column=0, padx=5, pady=5)
-        self.checkboxTra.grid(row=0, column=1, padx=5, pady=5)    
-
-        # Image Options
-        # Video Options
+       
         self.MODE_VIDEO_REPRODUCE = False   
 
         # Stream Options
@@ -96,14 +80,11 @@ class App:
                 padx=10, pady=10,
                 sticky=tk.W + tk.S,
                 )
-        self.system = System()
+       
 		# Main
         self.update()
         self.window.mainloop()
-        
-        #all the things that you need to close put here 
-         
-        # Solución problema de cierre de ventana 
+
         try:
             self.window.destroy()
         except:
@@ -117,6 +98,7 @@ class App:
         	image = self.system.drawDetector()
         else:
         	image = self.system.drawTracker()
+        	
         self.photo = cv2.resize(image, 
                                 dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
                                 interpolation=cv2.INTER_AREA)
@@ -140,7 +122,6 @@ class App:
         if filepath[-3:] in ["jpg", "png"]:
         	self.system.reset(source=filepath, typeSource = 'IMAGE')
         	
-
     def filemenu_openv(self):
         """Open Video"""
         filepath = filedialog.askopenfilename(
@@ -162,32 +143,24 @@ class App:
 
     ## Buttons
     def button_reproduce(self):
-        self.MODE_VIDEO_REPRODUCE = True
-
-    def button_pause(self):
-        self.MODE_VIDEO_REPRODUCE = False
+    	if self.system.source != None:
+    		self.ButtonReproduce.config(text="PAUSE" if not self.MODE_VIDEO_REPRODUCE else "PLAY")
+    		self.MODE_VIDEO_REPRODUCE = not self.MODE_VIDEO_REPRODUCE
 
     def button_record(self):
-    
-    	self.system.realeaseFile()
-    	if self.system.SAVE == False:
-    		self.system.initSave()
-    		
-    	if self.system.SAVE == False and self.system.typeSource == 'IMAGE':
-    		self.system.save()
+    	if self.system.source != None:
     		self.system.realeaseFile()
-    		self.system.SAVE = not  self.system.SAVE
+    		if self.system.SAVE == False:
+    			self.system.initSave()
     		
-    	self.system.SAVE = not  self.system.SAVE
-    	self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
+    		if self.system.SAVE == False and self.system.typeSource == 'IMAGE':
+    			self.system.save()
+    			self.system.realeaseFile()
+    			self.system.SAVE = not  self.system.SAVE
+    		
+    		self.system.SAVE = not  self.system.SAVE
+    		self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
     	
-    ## Checkboxes
-    def toggleDetector(self):
-        self.typeDetector = not self.typeDetector
-    def toggleTracker(self):
-        self.typeTracker = not self.typeTracker 
-
-
 
 class System:
 	def __init__(self):
@@ -197,6 +170,7 @@ class System:
 		self.SAVE = False
 		self.frameindex = 0
 		self.typeSource = None
+		self.source = None 
 		
 	def reset(self,source,typeSource):
 		try:
@@ -219,7 +193,7 @@ class System:
 			return self.source.read()
 					
 	
-	def __call__(self,):
+	def __call__(self):
 		"""función para calcular detecciónes y salvar si es el caso, 
 		si es guardar imagen solo se hace una vez si es la misma imagen"""
 		try:
