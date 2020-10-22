@@ -10,7 +10,10 @@ from datetime import datetime
 
 """
 Tareas por hacer:
-
+-> BIG PROBLEM, está retornando valores negativos de las bounding boxes desde el tracker
+	solución en la parte donde se calcula la media con el foltro de kalman poner una condición de que
+	si es menro que cero x o y se iguala a cero, los valores negativos se deben a la predicciones 
+	que no tienen en cuenta los limites de la imagen 
 -> cambiar color de la interfaz 
 
 """
@@ -241,7 +244,6 @@ class System:
 			self.id_ds = np.zeros((1,len(self.boxes)))		
 		
 		for bbox, id_, scor, classId in zip(self.boxes_ds, self.id_ds, self.sco, self.classIDs):
-			print(bbox)
 			x, y = bbox[0], bbox[1]
 			w, h = bbox[2] - x, bbox[3] - y
 			score = int(100*scor)
