@@ -166,112 +166,115 @@ class App:
     	
 
 class System:
-	def __init__(self):
-		self.tracker = DeepSort()
-		self.frame = cv2.imread('./data/logo.png')
-		self.empty = False
-		self.SAVE = False
-		self.frameindex = 0
-		self.typeSource = None
-		self.source = None 
-		
-	def reset(self,source,typeSource):
-		try:
-			self.source.realease()
-		except: 
-			pass
-		self.source = source  
-		self.typeSource = typeSource
-		self.tracker.deepsort.reset_tracker()
-		self.frameindex = 0 
-		self.SAVE = False 
-			
-	def loadSource(self):
-		if self.typeSource == "IMAGE":
-			if self.frameindex == 0:
-				return True , cv2.imread(self.source)
-			else: 
-				return False, None  
-		else:
-			return self.source.read()
-					
-	
-	def __call__(self):
-		"""función para calcular detecciónes y salvar si es el caso, 
-		si es guardar imagen solo se hace una vez si es la misma imagen"""
-		try:
-			self.empty, image = self.loadSource()
-			if self.empty == True:
-				self.frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-				self.boxes_ds, self.id_ds ,self.boxes,self.sco, self.classIDs, self.ids_nms, self.scales_nms, self.class_names  = self.tracker(self.frame)
-				self.frameindex += 1 
-				if self.SAVE == True:
-					self.save()
-		except: 
-			pass
-	
-	def drawDetector(self):
-		if self.empty == True:
-			return draw_YOLO(self.frame, (self.boxes, self.sco, self.classIDs, self.ids_nms, # para pintar el detector 
+    def __init__(self):
+        self.tracker = DeepSort()
+        self.frame = cv2.imread('./data/logo.png')
+        self.empty = False
+        self.SAVE = False
+        self.frameindex = 0
+        self.typeSource = None
+        self.source = None 
+            
+    def reset(self,source,typeSource):
+        try:
+            self.source.realease()
+        except: 
+            pass
+        self.source = source  
+        self.typeSource = typeSource
+        self.tracker.deepsort.reset_tracker()
+        self.frameindex = 0 
+        self.SAVE = False 
+                    
+    def loadSource(self):
+        if self.typeSource == "IMAGE":
+            if self.frameindex == 0:
+                return True , cv2.imread(self.source)
+            else: 
+                return False, None  
+        else:
+            return self.source.read()
+                                    
+    
+    def __call__(self):
+        """función para calcular detecciónes y salvar si es el caso, 
+        si es guardar imagen solo se hace una vez si es la misma imagen"""
+        try:
+            self.empty, image = self.loadSource()
+            if self.empty == True:
+                self.frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                self.boxes_ds, self.id_ds ,self.boxes,\
+                self.sco, self.classIDs, self.ids_nms,\
+                self.scales_nms, self.class_names  = self.tracker(self.frame)
+                self.frameindex += 1 
+                if self.SAVE == True:
+                    self.save()
+        except: 
+            pass
+    
+    def drawDetector(self):
+        if self.empty == True:
+            return draw_YOLO(self.frame, 
+                             (self.boxes, self.sco, 
+                              self.classIDs, self.ids_nms, 
                               self.scales_nms), self.class_names)
-		else:
-			return self.frame
-		
-	def drawTracker(self):
-		if self.empty == True:
-			return draw_DS(self.frame, self.boxes_ds, self.id_ds)
-		else:
-			return self.frame
-			
-	def drawtwo(self):
-		if self.empty == True : 
-			return draw_YOLO(draw_DS(self.frame, self.boxes_ds, self.id_ds), (self.boxes, self.sco, self.classIDs, self.ids_nms, 
-                              self.scales_nms), self.class_names)
-		else: 
-			return self.frame 
-		
-	def save(self):
-		self.save_annotations()
-		if self.typeSource != 'IMAGE':
-			self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
-		else:
-			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
-			
-		
-	def save_annotations(self):
-		if self.typeSource == 'IMAGE':
-			self.boxes_ds = self.boxes 
-			self.id_ds = np.zeros((1,len(self.boxes)))		
-		
-		for bbox, id_, scor, classId in zip(self.boxes_ds, self.id_ds, self.sco, self.classIDs):
-			x, y = bbox[0], bbox[1]
-			w, h = bbox[2] - x, bbox[3] - y
-			score = int(100*scor)
-			self.annotations_file.write(
-                    "%d,%d,%d,%d,%d,%d,%d,%d\n"\
-                    %(self.frameindex, int(id_), x, y, w, h, score, classId)
-                    )
-	
-	def realeaseFile(self):
-		try:
-			self.annotations_file.close()
-			self.out_video.release()
-		except:
-			pass
-		
-	def initSave(self):
-		self.realeaseFile()
-		path = os.path.join("output",str(datetime.now())[:-7]+".csv")
-		self.annotations_file = open(path, "w")
-		self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
-			       
-		if self.typeSource != 'IMAGE':
-			fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-			video_path = path[:-3]+"avi"
-			fps = self.source.get(cv2.CAP_PROP_FPS)
-			self.out_video = cv2.VideoWriter(video_path, fourcc, fps, 
-                                                (int(self.source.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.source.get(cv2.CAP_PROP_FRAME_HEIGHT))))
-                        
+        else:
+            return self.frame
+            
+    def drawTracker(self):
+        if self.empty == True:
+            return draw_DS(self.frame, self.boxes_ds, self.id_ds)
+        else:
+            return self.frame
+                    
+    def drawtwo(self):
+        if self.empty == True : 
+            return draw_YOLO(draw_DS(self.frame, self.boxes_ds, self.id_ds), (self.boxes, self.sco, self.classIDs, self.ids_nms, 
+                  self.scales_nms), self.class_names)
+        else: 
+            return self.frame 
+        
+    def save(self):
+        self.save_annotations()
+        if self.typeSource != 'IMAGE':
+            self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
+        else:
+            cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+                
+            
+    def save_annotations(self):
+        if self.typeSource == 'IMAGE':
+            self.boxes_ds = self.boxes 
+            self.id_ds = np.zeros((1,len(self.boxes)))		
+        
+        for bbox, id_, scor, classId in zip(self.boxes_ds, self.id_ds, self.sco, self.classIDs):
+            x, y = bbox[0], bbox[1]
+            w, h = bbox[2] - x, bbox[3] - y
+            score = int(100*scor)
+            self.annotations_file.write(
+        "%d,%d,%d,%d,%d,%d,%d,%d\n"\
+        %(self.frameindex, int(id_), x, y, w, h, score, classId))
+    
+    def realeaseFile(self):
+        try:
+            self.annotations_file.close()
+            self.out_video.release()
+        except:
+            pass
+            
+    def initSave(self):
+        self.realeaseFile()
+        path = os.path.join("output",str(datetime.now())[:-7]+".csv")
+        self.annotations_file = open(path, "w")
+        self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
+                       
+        if self.typeSource != 'IMAGE':
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            video_path = path[:-3]+"avi"
+            fps = self.source.get(cv2.CAP_PROP_FPS)
+            self.out_video = cv2.VideoWriter(video_path, fourcc, fps, 
+                                    (int(self.source.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.source.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+                    
 
 if __name__=="__main__":
     root = tk.Tk()
