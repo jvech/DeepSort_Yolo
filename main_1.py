@@ -1,3 +1,4 @@
+#!python
 import cv2
 import tkinter as tk
 from tkinter import filedialog
@@ -6,6 +7,7 @@ import numpy as np
 from classDeepSort import DeepSort
 from yolov3_tf2.utils import draw_YOLO, draw_DS
 import os 
+from os import path
 from datetime import datetime
 
 """
@@ -168,7 +170,8 @@ class App:
 class System:
     def __init__(self):
         self.tracker = DeepSort()
-        self.frame = cv2.imread('./data/logo.png')
+        self.frame = cv2.imread(path.join('data','logo.png'))
+        #self.frame = cv2.imread('./data/logo.png')
         self.empty = False
         self.SAVE = False
         self.frameindex = 0
