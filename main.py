@@ -171,13 +171,18 @@ class App:
         if self.typeDetector:
             self.frame = draw_YOLO(self.frame, (boxes_nms, sco_nms, classIDs_nms, ids_nms, # para pintar el detector 
                               scales_nms), class_names)
-
-        if self.MODE_STREAM_RECORD and self.mode_function == self.mode_stream:
+        if self.MODE_STREAM_RECORD and self.mode_function != self.mode_image:
             self.save_annotations(boxes_ds, id_ds, sco_nms, classIDs_nms)
             self.out_video.write(frame)
-            pass
-
-
+            
+            
+       	if  self.MODE_STREAM_RECORD and self.mode_function == self.mode_image and self.frameindex ==0:
+       		self.save_annotations(boxes_ds, id_ds, sco_nms, classIDs_nms)
+       		path = os.path.join("output",str(datetime.now())[:-7]+".jpg")
+       		cv2.imwrite(path,cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
+			
+       	
+            
     def mode_image(self):
         """Actualiza frame con imagen cargada"""
         self.FPS = 25
@@ -259,7 +264,7 @@ class App:
         self.MODE_VIDEO_REPRODUCE = False
 
     def button_record(self):
-        if self.mode_function == self.mode_stream and self.typeTracker:
+        if self.typeTracker:
             self.MODE_STREAM_RECORD = not self.MODE_STREAM_RECORD
             self.frameindex = 0
             if self.MODE_STREAM_RECORD:
@@ -270,15 +275,17 @@ class App:
                         "frame,id,x,y,w,h,score,class\n"
                         )
                 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-                video_path = path[:-3]+"avi"
-                self.out_video = cv2.VideoWriter(video_path, fourcc, self.FPS, 
+                if self.mode_function != self.mode_image:
+                    video_path = path[:-3]+"avi"
+                    self.out_video = cv2.VideoWriter(video_path, fourcc, self.FPS, 
                                                 (self.IMG_WIDTH, self.IMG_HEIGHT))
             else:
                 self.annotations_file.close()
-                self.out_video.release()
-                self.out_video = None
+                if self.mode_function != self.mode_image:               
+                	self.out_video.release()
+                	self.out_video = None
                 self.ButtonRecord.config(text="RECORD")
-        pass
+     
 
 
     ## Checkboxes

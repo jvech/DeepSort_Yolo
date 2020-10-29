@@ -8,6 +8,7 @@ from yolov3_tf2.models import (
 from yolov3_tf2.dataset import transform_images
 from yolov3_tf2.utils import draw_YOLO, draw_DS
 import imutils
+from os import path
 from deepsort import deepsort_rbc
 import warnings
 warnings.filterwarnings('ignore')
@@ -43,9 +44,11 @@ def frame_example(raw, frame):
 
 class DeepSort: 
     def __init__(self,num_classes=80,
-                 size = 416, classes = './data/coco.names',
+                 size = 416, classes = path.join('data', 'coco.names'),
+                 #size = 416, classes = './data/coco.names',
                  detectorTiny = False ,
-                 weights = './data/yolov3_model/yolov3.tf'):
+                 weights = path.join('data', 'yolov3_model', 'yolov3.tf')):
+                 #weights = './data/yolov3_model/yolov3.tf'):
                  
         #constantes
         self.num_classes = num_classes
