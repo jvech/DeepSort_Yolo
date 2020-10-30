@@ -8,13 +8,13 @@ from yolov3_tf2.utils import draw_YOLO, draw_DS
 import os 
 from datetime import datetime
 
-
 """
-Cosas por hacer:
-
--> actualizar la funciones draw_YOLO para que muestre clase y score 
-
--> agregar boton de stop para cerrar los archivos a guardar 
+Tareas por hacer:
+-> BIG PROBLEM, está retornando valores negativos de las bounding boxes desde el tracker
+	solución en la parte donde se calcula la media con el foltro de kalman poner una condición de que
+	si es menro que cero x o y se iguala a cero, los valores negativos se deben a la predicciones 
+	que no tienen en cuenta los limites de la imagen 
+-> cambiar color de la interfaz 
 
 """
 
@@ -25,6 +25,8 @@ class App:
         self.IMG_WIDTH = 640
         self.IMG_HEIGHT = 480
         self.FPS = 25
+        
+        self.system = System()
 
         #Ventana principal
         self.window = master
@@ -44,54 +46,43 @@ class App:
                 label="Open Video", command=self.filemenu_openv)
         self.FileMenu.add_command(
                 label="Open Stream", command=self.filemenu_opens)
-        self.FileMenu.add_command(
-                label="Save Annotations")
-        self.FileMenu.add_command(label="Save Detected File")
         self.FileMenu.add_command(label="Quit", command=self.window.quit)
         self.MainMenu.add_cascade(label="File", menu=self.FileMenu)
 
         master.config(menu=self.MainMenu)
 
         # Frames
+
         self.FrameLeft = tk.Frame(master, relief=tk.RAISED, bg="black")
         self.FrameRight = tk.Frame(master)
         self.FrameLeft.pack(side=tk.LEFT, padx=5)
         self.FrameRight.pack(side=tk.LEFT)
 
+
+	#check boxes to put object that you want
+        self.names = ["person","car","truck","motorbike","bus","bicycle","aeroplane","boat","traffic light","cat","dog","umbrella","sports ball","bottle","all","nothing"]
+        self.ischecked = [tk.IntVar() for i in self.names]
+        self.checkboxes =[tk.Checkbutton(self.FrameLeft,text=j,anchor="w",variable=self.ischecked[i],width=13,command=self.check) for i,j in enumerate(self.names)]
+        count = 0
+        for i in range(int(len(self.names)/2)):
+            for j in range(2):
+                self.checkboxes[count].grid(sticky="W",row=i+1,column=j,padx=5,pady=5)
+                count += 1 
+
         # Botones
         self.ButtonReproduce = tk.Button(self.FrameLeft, 
-                                         command=self.button_reproduce,
+                                         command= self.button_reproduce,
                                          text="PLAY") # 
-        #self.ButtonStop = tk.Button(self.FrameLeft, 
-        #                            command=self.button_stop,
-        #                            text="STOP") # 
-        self.ButtonPause = tk.Button(self.FrameLeft, 
-                                     command=self.button_pause,
-                                     text="PAUSE") # 
-        self.ButtonRecord = tk.Button(self.FrameLeft, text="RECORD",
-                                      command=self.button_record) # 壘
+        self.ButtonRecord = tk.Button(self.FrameLeft, text="START RECORDING",
+                                      command= self.button_record ) # 壘
 
-        self.ButtonReproduce.grid(row=1, column=0, padx=5, pady=5)
-        self.ButtonPause.grid(row=1, column=1, padx=5, pady=5)
-        self.ButtonRecord.grid(row=2, column=0, padx=5, pady=5)
+        self.ButtonReproduce.grid(row=len(self.names)+1, column=0,columnspan=2, padx=5, pady=5)
+        self.ButtonRecord.grid(row=len(self.names)+2, column=0,columnspan=2, padx=5, pady=5)
         
-        #self.ButtonStop.grid(row=0, column=2, padx=5, pady=5)
-        
-        #Check Buttons
-        self.checkboxDec = tk.Checkbutton(self.FrameLeft, text="Detector",
-                                          command=self.toggleDetector)
-        self.checkboxTra = tk.Checkbutton(self.FrameLeft, text="Tracker",
-                                          command= self.toggleTracker)
 
-        self.checkboxDec.grid(row=0, column=0, padx=5, pady=5)
-        self.checkboxTra.grid(row=0, column=1, padx=5, pady=5)
 
-        #self.checkboxDec.select()
-        #self.checkboxTra.select()        
-
-        # Image Options
-        # Video Options
-        self.MODE_VIDEO_REPRODUCE = True  
+       
+        self.MODE_VIDEO_REPRODUCE = False   
 
         # Stream Options
         self.MODE_STREAM_RECORD = False
@@ -106,111 +97,40 @@ class App:
                 padx=10, pady=10,
                 sticky=tk.W + tk.S,
                 )
-
-
-        # Variables internas
-        self.frame = None
-        self.photo = None
-        self.caption = None
-        self.frameindex = 0 
-        self.filepath = os.path.join('data','logo.png')
-        self.annotations_file = None
-        self.out_video = None
-
-        self.tracker = DeepSort() 
-        self.typeTracker = False # True si se quiere usar como tracker
-        self.typeDetector = False #True si se quiere usar como detector           
-
-        self.mode_function = self.mode_image #por default 
-
-        # Main
+       
+		# Main
         self.update()
         self.window.mainloop()
-        
-        #all the things that you need to close put here 
-         
-        # Solución problema de cierre de ventana 
+
         try:
             self.window.destroy()
         except:
             pass
 
-    def update(self):
-        """Función para actualizar en screen
-        poner todo lo que se requiera actualizar"""   
+    def check(self):
+        if self.ischecked[-2].get()==1 or self.ischecked[-1].get()==1:
+            for check in self.checkboxes[:-1]:
+                if self.ischecked[-2].get()==1:#all is  activated 
+                    check.select()
+                if self.ischecked[-1].get()==1:
+                    check.deselect()
+        self.system.objects = [name for i,name in enumerate(self.names) if self.ischecked[i].get()==1 ]
+
+    def update(self): 
+        if self.MODE_VIDEO_REPRODUCE or self.system.frameindex == 0:
+            self.system()
         
-        
-        # mode_function: imagen, video o streaming
-        # actializa frame cargando desde la fuente  
-        if self.MODE_VIDEO_REPRODUCE:
-            self.mode_function()
-            self.trackdetec()
-            self.frameindex += 1
-            if self.mode_function == self.mode_image:
-            	self.MODE_VIDEO_REPRODUCE = True 
-         
-        self.photo = cv2.resize(self.frame, 
+        if self.system.typeSource == 'IMAGE':
+        	image = self.system.drawDetector()
+        else:
+        	image = self.system.drawTracker()
+        	
+        self.photo = cv2.resize(image, 
                                 dsize=(self.IMG_WIDTH, self.IMG_HEIGHT), 
                                 interpolation=cv2.INTER_AREA)
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(self.photo))
-        
         self.CanvasMainImage.create_image(0, 0, image=self.photo, anchor=tk.NW)
         self.window.after(int(1000/self.FPS), self.update)
-
-    def trackdetec(self):
-        """Actualiza frame con detecciones o tracks """
-        frame = cv2.cvtColor(self.frame.copy(), cv2.COLOR_BGR2RGB)
-        if self.typeDetector or self.typeTracker: 
-            boxes_ds, id_ds ,boxes_nms,\
-            sco_nms, classIDs_nms, ids_nms,\
-            scales_nms, class_names  = self.tracker(self.frame)
-
-        if self.typeTracker:    
-            self.frame = draw_DS(self.frame, boxes_ds, id_ds)    # para pintar el tracker
-        
-        if self.typeDetector:
-            self.frame = draw_YOLO(self.frame, (boxes_nms, sco_nms, classIDs_nms, ids_nms, # para pintar el detector 
-                              scales_nms), class_names)
-        if self.MODE_STREAM_RECORD and self.mode_function != self.mode_image:
-            self.save_annotations(boxes_ds, id_ds, sco_nms, classIDs_nms)
-            self.out_video.write(frame)
-            
-            
-       	if  self.MODE_STREAM_RECORD and self.mode_function == self.mode_image and self.frameindex ==0:
-       		self.save_annotations(boxes_ds, id_ds, sco_nms, classIDs_nms)
-       		path = os.path.join("output",str(datetime.now())[:-7]+".jpg")
-       		cv2.imwrite(path,cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
-			
-       	
-            
-    def mode_image(self):
-        """Actualiza frame con imagen cargada"""
-        self.FPS = 25
-        try:
-            self.caption.release()
-        except AttributeError:
-            pass
-        self.frame = cv2.imread(self.filepath)
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-
-    def mode_video(self):
-        self.FPS = self.caption.get(cv2.CAP_PROP_FPS)
-        ret, frame = self.video_handler()
-        if ret == True:
-            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        else:
-            self.MODE_VIDEO_REPRODUCE = False 
-
-    def mode_stream(self):
-        self.FPS = 25
-        ret, self.frame = self.caption.read()
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-
-    def video_handler(self):
-        if self.MODE_VIDEO_REPRODUCE or self.photo == None:
-            return self.caption.read()
-        else:
-            return True, cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 
 
     # Funciones widgets 
@@ -226,11 +146,8 @@ class App:
                         ("png files", "*.png"),))
                         
         if filepath[-3:] in ["jpg", "png"]:
-            self.MODE_VIDEO_REPRODUCE = True
-            self.filepath = filepath
-            self.mode_function =  self.mode_image
-            self.tracker.deepsort.reset_tracker()
-
+        	self.system.reset(source=filepath, typeSource = 'IMAGE')
+        	
     def filemenu_openv(self):
         """Open Video"""
         filepath = filedialog.askopenfilename(
@@ -241,73 +158,147 @@ class App:
                         ("mp4 files", "*.mp4"),))
                         
         if filepath[-3:] in ["avi", "mp4"]:
-            self.MODE_VIDEO_REPRODUCE = True
-            self.filepath = filepath
-            self.caption = cv2.VideoCapture(self.filepath)
-            self.mode_function =  self.mode_video
-            self.tracker.deepsort.reset_tracker()
-            self.frameindex = 0
+        	self.system.reset(source=cv2.VideoCapture(filepath),typeSource = 'VIDEO')
 
     def filemenu_opens(self):
         """Open Stream"""
         self.MODE_VIDEO_REPRODUCE = True
-        self.caption = cv2.VideoCapture(0)
-        self.mode_function = self.mode_stream
-        self.tracker.deepsort.reset_tracker()
-        self.frameindex = 0
+        caption = cv2.VideoCapture(0)
+        self.system.reset(source=caption, typeSource = 'STREAM')
+
 
     ## Buttons
     def button_reproduce(self):
-        self.MODE_VIDEO_REPRODUCE = True
-
-    def button_pause(self):
-        self.MODE_VIDEO_REPRODUCE = False
+    	if self.system.source != None:
+    		self.ButtonReproduce.config(text="PAUSE" if not self.MODE_VIDEO_REPRODUCE else "PLAY")
+    		self.MODE_VIDEO_REPRODUCE = not self.MODE_VIDEO_REPRODUCE
 
     def button_record(self):
-        if self.typeTracker:
-            self.MODE_STREAM_RECORD = not self.MODE_STREAM_RECORD
-            self.frameindex = 0
-            if self.MODE_STREAM_RECORD:
-                self.ButtonRecord.config(text="RECORDING")
-                path = os.path.join("output",str(datetime.now())[:-7]+".csv")
-                self.annotations_file = open(path, "w")
-                self.annotations_file.write(
-                        "frame,id,x,y,w,h,score,class\n"
-                        )
-                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-                if self.mode_function != self.mode_image:
-                    video_path = path[:-3]+"avi"
-                    self.out_video = cv2.VideoWriter(video_path, fourcc, self.FPS, 
-                                                (self.IMG_WIDTH, self.IMG_HEIGHT))
-            else:
-                self.annotations_file.close()
-                if self.mode_function != self.mode_image:               
-                	self.out_video.release()
-                	self.out_video = None
-                self.ButtonRecord.config(text="RECORD")
-     
+    	if self.system.source != None:
+    		self.system.realeaseFile()
+    		if self.system.SAVE == False:
+    			self.system.initSave()
+    		
+    		if self.system.SAVE == False and self.system.typeSource == 'IMAGE':
+    			self.system.save()
+    			self.system.realeaseFile()
+    			self.system.SAVE = not  self.system.SAVE
+    		
+    		self.system.SAVE = not  self.system.SAVE
+    		self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
+    	
 
-
-    ## Checkboxes
-    def toggleDetector(self):
-        self.typeDetector = not self.typeDetector
-    def toggleTracker(self):
-        self.typeTracker = not self.typeTracker 
-
-    # Save Part
-    def save_annotations(self, boxes, ids, sco, classIDs):
-        for bbox, id_, scor, classId in zip(boxes, ids, sco, classIDs):
-            x, y = bbox[0], bbox[1]
-            w, h = bbox[2] - x, bbox[3] - y
-            score = int(100*scor)
-            self.annotations_file.write(
-                    "%d,%d,%d,%d,%d,%d,%d,%s\n"\
+class System:
+	def __init__(self):
+		self.tracker = DeepSort()
+		self.frame = cv2.imread('./data/empty.jpeg')
+		self.empty = False
+		self.SAVE = False
+		self.frameindex = 0
+		self.typeSource = None
+		self.source = None
+		self.objects = []
+		
+	def reset(self,source,typeSource):
+		try:
+			self.source.realease()
+		except: 
+			pass
+		self.source = source  
+		self.typeSource = typeSource
+		self.tracker.deepsort.reset_tracker()
+		self.frameindex = 0 
+		self.SAVE = False 
+			
+	def loadSource(self):
+		if self.typeSource == "IMAGE":
+			if self.frameindex == 0:
+				return True , cv2.imread(self.source)
+			else: 
+				return False, None  
+		else:
+			return self.source.read()
+					
+	
+	def __call__(self):
+		"""función para calcular detecciónes y salvar si es el caso, 
+		si es guardar imagen solo se hace una vez si es la misma imagen"""
+		try:
+			self.empty, imagen = self.loadSource()
+			if self.empty == True:
+				self.frame = cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB)
+				self.boxes_ds, self.id_ds ,self.boxes,self.sco, self.classIDs, self.ids_nms, self.scales_nms, self.class_names  = self.tracker(self.frame,self.objects)
+				self.frameindex += 1 
+				if self.SAVE == True:
+					self.save()
+			else: 
+				self.releaseFiles()
+				
+		except: 
+			pass
+	
+	def drawDetector(self):
+		if self.empty == True:
+			return draw_YOLO(self.frame, (self.boxes, self.sco, self.classIDs, self.ids_nms, # para pintar el detector 
+                              self.scales_nms), self.class_names)
+		else:
+			return self.frame
+		
+	def drawTracker(self):
+		if self.empty == True:
+			return draw_DS(self.frame, self.boxes_ds, self.id_ds)
+		else:
+			return self.frame
+			
+	def drawtwo(self):
+		if self.empty == True : 
+			return draw_YOLO(draw_DS(self.frame, self.boxes_ds, self.id_ds), (self.boxes, self.sco, self.classIDs, self.ids_nms, 
+                              self.scales_nms), self.class_names)
+		else: 
+			return self.frame 
+		
+	def save(self):
+		self.save_annotations()
+		if self.typeSource != 'IMAGE':
+			self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
+		else:
+			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+			
+		
+	def save_annotations(self):
+		if self.typeSource == 'IMAGE':
+			self.boxes_ds = self.boxes 
+			self.id_ds = np.zeros((1,len(self.boxes)))		
+		
+		for bbox, id_, scor, classId in zip(self.boxes_ds, self.id_ds, self.sco, self.classIDs):
+			x, y = bbox[0], bbox[1]
+			w, h = bbox[2] - x, bbox[3] - y
+			score = int(100*scor)
+			self.annotations_file.write(
+                    "%d,%d,%d,%d,%d,%d,%d,%d\n"\
                     %(self.frameindex, int(id_), x, y, w, h, score, classId)
                     )
-
-    def save_video(self):
-        pass
-
+	
+	def realeaseFile(self):
+		try:
+			self.annotations_file.close()
+			self.out_video.release()
+		except:
+			pass
+		
+	def initSave(self):
+		self.realeaseFile()
+		path = os.path.join("output",str(datetime.now())[:-7]+".csv")
+		self.annotations_file = open(path, "w")
+		self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
+			       
+		if self.typeSource != 'IMAGE':
+			fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+			video_path = path[:-3]+"avi"
+			fps = self.source.get(cv2.CAP_PROP_FPS)
+			self.out_video = cv2.VideoWriter(video_path, fourcc, fps, 
+                                                (int(self.source.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.source.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+                        
 
 if __name__=="__main__":
     root = tk.Tk()

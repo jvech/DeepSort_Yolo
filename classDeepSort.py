@@ -8,7 +8,6 @@ from yolov3_tf2.models import (
 from yolov3_tf2.dataset import transform_images
 from yolov3_tf2.utils import draw_YOLO, draw_DS
 import imutils
-from os import path
 from deepsort import deepsort_rbc
 import warnings
 warnings.filterwarnings('ignore')
@@ -44,11 +43,9 @@ def frame_example(raw, frame):
 
 class DeepSort: 
     def __init__(self,num_classes=80,
-                 size = 416, classes = path.join('data', 'coco.names'),
-                 #size = 416, classes = './data/coco.names',
+                 size = 416, classes = './data/coco.names',
                  detectorTiny = False ,
-                 weights = path.join('data', 'yolov3_model', 'yolov3.tf')):
-                 #weights = './data/yolov3_model/yolov3.tf'):
+                 weights = './data/yolov3_model/yolov3.tf'):
                  
         #constantes
         self.num_classes = num_classes
@@ -73,7 +70,7 @@ class DeepSort:
 
         self.class_names = [c.strip() for c in open(self.classes).readlines()]        
 
-    def __call__(self,img):
+    def __call__(self,img,objects):
         """ parámetros: imagen 
             Salida: boxes_ds, id_ds ,boxes, sco, classIDs, ids, scales, class_names
              
@@ -109,7 +106,7 @@ class DeepSort:
             if indi is not None:
                 for i in indi:
                     classID = int(classes[0][int(i[4])])
-                    if self.class_names[classID] == "person" or self.class_names[classID] == "person":
+                    if self.class_names[classID] in objects:
                         sco = np.array(scores[0][int(i[4])])
                         box_p = np.array(boxes[0][int(i[4])])
                         # logging.info('\t{}, {}, {}'.format(class_names[classID],
@@ -175,7 +172,7 @@ if __name__=="__main__":
 
     tracker = DeepSort()    
 
-    vid = cv2.VideoCapture("./videos_test/TUD-Stadtmitte.avi")
+    vid = cv2.VideoCapture("./ETH-Sunnyday.avi")
 
     count = 0
     while True: 
@@ -188,9 +185,9 @@ if __name__=="__main__":
                 continue
             else: 
                 break
-	
-	
-        boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = tracker(img)    
+        boxes_ds, id_ds ,boxes_nms, sco_nms, classIDs_nms, ids_nms, scales_nms, class_names  = tracker(img)
+        for boxes,id_ in zip(boxes_ds,id_ds):
+        	print(boxes,id_ ,end='\n')    
         img = draw_DS(img, boxes_ds, id_ds)    # para pintar el traker 
         img = draw_YOLO(img, (boxes_nms, sco_nms, classIDs_nms, ids_nms, # para pintar el detector 
                               scales_nms), class_names)
