@@ -115,6 +115,8 @@ class App:
                 if self.ischecked[-1].get()==1:
                     check.deselect()
         self.system.objects = [name for i,name in enumerate(self.names) if self.ischecked[i].get()==1 ]
+        if self.system.typeSource == 'IMAGE':
+            self.system.frameindex = 0
 
     def update(self): 
         if self.MODE_VIDEO_REPRODUCE or self.system.frameindex == 0:
