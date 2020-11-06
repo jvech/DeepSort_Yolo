@@ -76,9 +76,12 @@ class App:
         self.ButtonRecord = tk.Button(self.FrameLeft, text="START RECORDING",
                                       command= self.button_record ) # 壘
 
+        self.ResetVideo = tk.Button(self.FrameLeft, text="RESET VIDEO",
+                                      command= self.resetvideo) # 壘
+
         self.ButtonReproduce.grid(row=len(self.names)+1, column=0,columnspan=2, padx=5, pady=5)
-        self.ButtonRecord.grid(row=len(self.names)+2, column=0,columnspan=2, padx=5, pady=5)
-        
+        self.ButtonRecord.grid(row=len(self.names)+2, column=0,columnspan=2, padx=5, pady=5) 
+        self.ResetVideo.grid(row=len(self.names)+3, column=0,columnspan=2, padx=5, pady=5)
 
 
        
@@ -115,8 +118,6 @@ class App:
                 if self.ischecked[-1].get()==1:
                     check.deselect()
         self.system.objects = [name for i,name in enumerate(self.names) if self.ischecked[i].get()==1 ]
-        if self.system.typeSource == 'IMAGE':
-            self.system.frameindex = 0
 
     def update(self): 
         if self.MODE_VIDEO_REPRODUCE or self.system.frameindex == 0:
@@ -152,15 +153,17 @@ class App:
         	
     def filemenu_openv(self):
         """Open Video"""
-        filepath = filedialog.askopenfilename(
-                    initialdir="./",
-                    title="Select File", 
-                    filetypes = (
-                        ("avi files", "*.avi"),
-                        ("mp4 files", "*.mp4"),))
+        self.MODE_VIDEO_REPRODUCE = False 
+        self.filepath = filedialog.askopenfilename(
+                        initialdir="./",
+                        title="Select File", 
+                        filetypes = (
+                            ("avi files", "*.avi"),
+                            ("mp4 files", "*.mp4"),))
                         
-        if filepath[-3:] in ["avi", "mp4"]:
-        	self.system.reset(source=cv2.VideoCapture(filepath),typeSource = 'VIDEO')
+        if self.filepath[-3:] in ["avi", "mp4"]:
+        	self.system.reset(source=cv2.VideoCapture(self.filepath),typeSource = 'VIDEO')
+
 
     def filemenu_opens(self):
         """Open Stream"""
@@ -188,7 +191,14 @@ class App:
     		
     		self.system.SAVE = not  self.system.SAVE
     		self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
-    	
+
+    def resetvideo(self):
+        if self.system.typeSource == "VIDEO":
+            self.ButtonReproduce.config(text="PLAY")
+            self.MODE_VIDEO_REPRODUCE = False
+            self.system.reset(source=cv2.VideoCapture(self.filepath),typeSource = 'VIDEO')
+
+
 
 class System:
 	def __init__(self):
