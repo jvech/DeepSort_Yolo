@@ -1,3 +1,4 @@
+#!python
 import cv2
 import tkinter as tk
 from tkinter import filedialog
@@ -5,7 +6,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from classDeepSort import DeepSort
 from yolov3_tf2.utils import draw_YOLO, draw_DS
-import os 
+from os import path
 from datetime import datetime
 
 """
@@ -33,7 +34,7 @@ class App:
         self.window.title = "MAIN WINDOW"
 
         #icono
-        photo = tk.PhotoImage(file = "./data/logo.png")
+        photo = tk.PhotoImage(file = path.join("data", "logo.png"))
         self.window.iconphoto(False, photo)
 
         # Menus
@@ -60,7 +61,10 @@ class App:
 
 
 	#check boxes to put object that you want
-        self.names = ["person","car","truck","motorbike","bus","bicycle","aeroplane","boat","traffic light","cat","dog","umbrella","sports ball","bottle","all","nothing"]
+        self.names = ["person","car","truck","motorbike","bus",
+                      "bicycle","aeroplane","boat","traffic light",
+                      "cat","dog","umbrella","sports ball","bottle",
+                      "all","nothing"]
         self.ischecked = [tk.IntVar() for i in self.names]
         self.checkboxes =[tk.Checkbutton(self.FrameLeft,text=j,anchor="w",variable=self.ischecked[i],width=13,command=self.check) for i,j in enumerate(self.names)]
         count = 0
@@ -143,7 +147,7 @@ class App:
     def filemenu_openi(self):
         """Open Image"""
         filepath = filedialog.askopenfilename(
-                    initialdir="./",
+                    initialdir=path.join("."),
                     title="Select File",
                     filetypes = (
                         ("jpg files", "*.jpg"), 
@@ -156,7 +160,7 @@ class App:
         """Open Video"""
         self.MODE_VIDEO_REPRODUCE = False 
         self.filepath = filedialog.askopenfilename(
-                        initialdir="./",
+                        initialdir=path.join("."),
                         title="Select File", 
                         filetypes = (
                             ("avi files", "*.avi"),
@@ -204,7 +208,7 @@ class App:
 class System:
 	def __init__(self):
 		self.tracker = DeepSort()
-		self.frame = cv2.imread('./data/empty.jpeg')
+		self.frame = cv2.imread(path.join("data","empty.jpeg"))
 		self.empty = False
 		self.SAVE = False
 		self.frameindex = 0
@@ -275,7 +279,7 @@ class System:
 		if self.typeSource != 'IMAGE':
 			self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
 		else:
-			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+			cv2.imwrite(path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
 			
 		
 	def save_annotations(self):
@@ -301,7 +305,7 @@ class System:
 		
 	def initSave(self):
 		self.realeaseFile()
-		path = os.path.join("output",str(datetime.now())[:-7]+".csv")
+		path = path.join("output",str(datetime.now())[:-7]+".csv")
 		self.annotations_file = open(path, "w")
 		self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
 			       
