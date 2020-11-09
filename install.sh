@@ -10,6 +10,3 @@ rm ./cookie
 echo "Decompressing the weights"
 unzip -d ./data ${FILENAME}
 rm ${FILENAME}
-
-
-
