@@ -6,8 +6,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from classDeepSort import DeepSort
 from yolov3_tf2.utils import draw_YOLO, draw_DS
-#from os import path
-import os
+from os import path
 from datetime import datetime
 
 """
@@ -35,7 +34,7 @@ class App:
         self.window.title = "MAIN WINDOW"
 
         #icono
-        photo = tk.PhotoImage(file = os.path.join("data", "logo.png"))
+        photo = tk.PhotoImage(file = path.join("data", "logo.png"))
         self.window.iconphoto(False, photo)
 
         # Menus
@@ -61,6 +60,19 @@ class App:
         self.FrameRight.pack(side=tk.LEFT)
 
 
+	#check boxes to put object that you want
+        self.names = ["person","car","truck","motorbike","bus",
+                      "bicycle","aeroplane","boat","traffic light",
+                      "cat","dog","umbrella","sports ball","bottle",
+                      "all","nothing"]
+        self.ischecked = [tk.IntVar() for i in self.names]
+        self.checkboxes =[tk.Checkbutton(self.FrameLeft,text=j,anchor="w",variable=self.ischecked[i],width=13,command=self.check) for i,j in enumerate(self.names)]
+        count = 0
+        for i in range(int(len(self.names)/2)):
+            for j in range(2):
+                self.checkboxes[count].grid(sticky="W",row=i+1,column=j,padx=5,pady=5)
+                count += 1 
+
         # Botones
         self.ButtonReproduce = tk.Button(self.FrameLeft, 
                                          command= self.button_reproduce,
@@ -71,9 +83,9 @@ class App:
         self.ResetVideo = tk.Button(self.FrameLeft, text="RESET VIDEO",
                                       command= self.resetvideo) # 壘
 
-        self.ButtonReproduce.grid(row=1, column=0,columnspan=2, padx=5, pady=5)
-        self.ButtonRecord.grid(row=2, column=0,columnspan=2, padx=5, pady=5) 
-        self.ResetVideo.grid(row=3, column=0,columnspan=2, padx=5, pady=5)
+        self.ButtonReproduce.grid(row=len(self.names)+1, column=0,columnspan=2, padx=5, pady=5)
+        self.ButtonRecord.grid(row=len(self.names)+2, column=0,columnspan=2, padx=5, pady=5) 
+        self.ResetVideo.grid(row=len(self.names)+3, column=0,columnspan=2, padx=5, pady=5)
 
 
         self.MODE_VIDEO_REPRODUCE = False   
@@ -135,7 +147,7 @@ class App:
     def filemenu_openi(self):
         """Open Image"""
         filepath = filedialog.askopenfilename(
-                    initialdir=os.path.join("."),
+                    initialdir=path.join("."),
                     title="Select File",
                     filetypes = (
                         ("jpg files", "*.jpg"), 
@@ -148,7 +160,7 @@ class App:
         """Open Video"""
         self.MODE_VIDEO_REPRODUCE = False 
         self.filepath = filedialog.askopenfilename(
-                        initialdir=os.path.join("."),
+                        initialdir=path.join("."),
                         title="Select File", 
                         filetypes = (
                             ("avi files", "*.avi"),
@@ -196,13 +208,13 @@ class App:
 class System:
 	def __init__(self):
 		self.tracker = DeepSort()
-		self.frame = cv2.imread(os.path.join("data","empty.jpeg"))
+		self.frame = cv2.imread(path.join("data","empty.jpeg"))
 		self.empty = False
 		self.SAVE = False
 		self.frameindex = 0
 		self.typeSource = None
 		self.source = None
-		self.objects = "person"
+		self.objects = []
 		
 	def reset(self,source,typeSource):
 		try:
@@ -267,7 +279,7 @@ class System:
 		if self.typeSource != 'IMAGE':
 			self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
 		else:
-			cv2.imwrite(os.path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
+			cv2.imwrite(path.join("output",str(datetime.now())[:-7]+".png"),cv2.cvtColor(self.drawDetector(), cv2.COLOR_BGR2RGB)) 
 			
 		
 	def save_annotations(self):
@@ -293,7 +305,7 @@ class System:
 		
 	def initSave(self):
 		self.realeaseFile()
-		path = os.path.join("output",str(datetime.now())[:-7]+".csv")
+		path = path.join("output",str(datetime.now())[:-7]+".csv")
 		self.annotations_file = open(path, "w")
 		self.annotations_file.write("frame,id,x,y,w,h,score,class\n")
 			       
