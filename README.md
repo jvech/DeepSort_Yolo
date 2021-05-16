@@ -6,6 +6,9 @@
 ![Last commit](https://img.shields.io/github/last-commit/jmvalenciae/DeepSort_Yolo)
 
 
+![sys](https://user-images.githubusercontent.com/50622777/118022500-0b03f200-b322-11eb-8480-1d5800b0a0fa.gif)
+
+
 ## Tutorial de instalación 
 
 
@@ -41,6 +44,6 @@ python load_weights.py
 
 
 
-![sys](https://user-images.githubusercontent.com/50622777/118022500-0b03f200-b322-11eb-8480-1d5800b0a0fa.gif)
+
 
 
