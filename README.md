@@ -1,3 +1,11 @@
+# Tradet-Net
+
+![LICENSE](https://img.shields.io/github/license/jmvalenciae/DeepSort_Yolo)
+![GITHUB TOP LANGUAJE](https://img.shields.io/github/languages/top/jmvalenciae/DeepSort_Yolo)
+![CodeFactor](https://img.shields.io/codefactor/grade/github/jmvalenciae/DeepSort_Yolo/master)
+![Last commit](https://img.shields.io/github/last-commit/jmvalenciae/DeepSort_Yolo)
+
+
 ## Tutorial de instalación 
 
 
