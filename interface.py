@@ -236,6 +236,7 @@ class System:
     def __init__(self):
         self.tracker = DeepSort()
         self.frame = cv2.imread(os.path.join("data","empty.jpeg"))
+        self.frame = cv2.cvtColor(self.frame,cv2.COLOR_BGR2RGB)
         self.empty = False
         self.SAVE = False
         self.frameindex = 0

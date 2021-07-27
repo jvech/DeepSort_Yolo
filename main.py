@@ -1,4 +1,4 @@
-import tkinter as tk
+import tkinter as  tk
 from interface import App
 
 if __name__=="__main__":
