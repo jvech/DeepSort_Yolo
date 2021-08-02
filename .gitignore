@@ -2,3 +2,4 @@ env/
 __pycache__/
 weights/yolov3.weights
 data/yolov3_model/*
+output
