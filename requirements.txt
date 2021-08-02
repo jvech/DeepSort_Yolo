@@ -7,3 +7,4 @@ seaborn
 pillow
 imutils 
 tensorflow-probability
+tkinter 
