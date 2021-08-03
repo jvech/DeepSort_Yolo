@@ -1,4 +1,7 @@
 # vim: expandtab:ts=4:sw=4
+
+""" Script to convert images to videos, MOT challenge
+"""
 import os
 import argparse
 import show_results

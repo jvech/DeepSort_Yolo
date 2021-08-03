@@ -2,12 +2,6 @@
 DeepSort Yolo algorithm in sklearn/tensorflow keras.
 '''
 
-
-'''
-Que falta:
-
-    3) determinar el tamaño del hypercolumn
-'''
 from absl import flags
 from absl.flags import FLAGS
 import time

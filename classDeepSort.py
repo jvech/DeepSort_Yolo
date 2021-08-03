@@ -1,3 +1,8 @@
+""" Script to handle deepsort algorithm and connecto to yolov3 and GUI
+"""
+
+
+
 import time 
 import cv2
 import numpy as np
@@ -43,6 +48,9 @@ def frame_example(raw, frame):
 
 
 class DeepSort: 
+    """ Class to handle deepsort algorithm and merge with yolov3
+
+    """
     def __init__(self,num_classes=80,
                  size = 416, classes = path.join("data","coco.names"),
                  detectorTiny = False ,
@@ -72,18 +80,18 @@ class DeepSort:
         self.class_names = [c.strip() for c in open(self.classes).readlines()]        
 
     def __call__(self,img,objects):
-        """ parámetros: imagen 
-            Salida: boxes_ds, id_ds ,boxes, sco, classIDs, ids, scales, class_names
-             
-            boxes_ds y id_ds salidas del tracker 
-            boxes, sco, classIDs, ids, scales, class_names son salidas del detector
-            
-            
-            sco: score detecciones 
-            classIDs: entero que define a que clase pertenece la detección 
-            ids: entero que define el orden en que se realizaron las detecciones en cada frame 
-            scales: define cual salida de la yolo realizo la detección, recordar que se tienen tres salidas cada una define una escala 
-            class_names: es un vector de string que tiene los nombres de las clases 
+        """ parameters: picture
+             Output: boxes_ds, id_ds, boxes, sco, classIDs, ids, scales, class_names
+
+             boxes_ds and id_ds tracker outputs
+             boxes, sco, classIDs, ids, scales, class_names are detector outputs
+
+
+             sco: score detections
+             classIDs: integer that defines which class the detection belongs to
+             ids: integer that defines the order in which the detections were made in each frame
+             scales: define which output of the machine performed the detection, remember that there are three outputs, each one defines a scale
+             class_names: it is a string vector that has the names of the classes
             """
     
         img_in = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

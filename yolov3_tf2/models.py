@@ -1,3 +1,8 @@
+"""
+Script to build yolov3 using tensorflow and keras
+"""
+
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model

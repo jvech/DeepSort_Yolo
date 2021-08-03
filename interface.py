@@ -1,4 +1,7 @@
-#!python
+"""
+Module where all the GUI is created and handled
+"""
+
 import cv2
 import tkinter as tk
 import matplotlib.pyplot as plt
@@ -9,24 +12,18 @@ from PIL import Image, ImageTk
 import numpy as np
 from classDeepSort import DeepSort
 from yolov3_tf2.utils import draw_YOLO, draw_DS
-#from os import pat
 import os
 from datetime import datetime
 
 
 from  measure import Measure
 from postProcessing import processing_csv 
-"""
-Tareas por hacer:
--> BIG PROBLEM, está retornando valores negativos de las bounding boxes desde el tracker
-	solución en la parte donde se calcula la media con el foltro de kalman poner una condición de que
-	si es menro que cero x o y se iguala a cero, los valores negativos se deben a la predicciones 
-	que no tienen en cuenta los limites de la imagen 
--> cambiar color de la interfaz 
 
-"""
 
 class App:
+    """ Class to handle the GUI
+    """
+
     def __init__(self, master):
         # Constantes
         self.IMG_WIDTH = 640
@@ -115,6 +112,8 @@ class App:
             pass
 
     def check(self):
+        """ Check which objects is required to track, these work only in the extenden version
+        """
         if self.ischecked[-2].get()==1 or self.ischecked[-1].get()==1:
             for check in self.checkboxes[:-1]:
                 if self.ischecked[-2].get()==1:#all is  activated 
@@ -126,6 +125,8 @@ class App:
             self.system.frameindex = 0
 
     def update(self): 
+        """ Updates the visualization, the video and the plot of distances
+        """
         if self.MODE_VIDEO_REPRODUCE or self.system.frameindex == 0:
             self.system()
         
@@ -190,6 +191,8 @@ class App:
         self.system.reset(source=caption, typeSource = 'STREAM')
 
     def postprocess(self):
+        """ For generating the postprocess using the csv
+        """
         self.ButtonPostProcess.config(text='GENERATING...')
         filepath = filedialog.askopenfilename(
                         initialdir=os.path.join("."),
@@ -206,11 +209,15 @@ class App:
 
     ## Buttons
     def button_reproduce(self):
+        """ Button To reproduce the video
+        """
         if self.system.source != None:
             self.ButtonReproduce.config(text="PAUSE" if not self.MODE_VIDEO_REPRODUCE else "PLAY")
             self.MODE_VIDEO_REPRODUCE = not self.MODE_VIDEO_REPRODUCE
 
     def button_record(self):
+        """ Button to record the output video and csv
+        """
         if self.system.source != None:
             self.system.realeaseFile()
             if self.system.SAVE == False:
@@ -225,6 +232,8 @@ class App:
             self.ButtonRecord.config(text="STOP RECORDING" if self.system.SAVE else "START RECORDING")
 
     def resetvideo(self):
+        """ Button to reset the video
+        """
         if self.system.typeSource == "VIDEO":
             self.ButtonReproduce.config(text="PLAY")
             self.MODE_VIDEO_REPRODUCE = False
@@ -233,6 +242,8 @@ class App:
 
 
 class System:
+    """ CLass than handles the tracker system, save files, inputs and ouputs
+    """
     def __init__(self):
         self.tracker = DeepSort()
         self.frame = cv2.imread(os.path.join("data","empty.jpeg"))
@@ -246,6 +257,8 @@ class System:
         self.pointBirds= []
         
     def reset(self,source,typeSource):
+        """ Takes the system to empty system
+        """
         try:
             self.source.realease()
         except: 
@@ -257,6 +270,8 @@ class System:
         self.SAVE = False 
 
     def loadSource(self):
+        """ Load the data source
+        """
         if self.typeSource == "IMAGE":
             if self.frameindex == 0:
                 return True , cv2.imread(self.source)
@@ -267,8 +282,7 @@ class System:
                     
     
     def __call__(self):
-        """función para calcular detecciónes y salvar si es el caso, 
-        si es guardar imagen solo se hace una vez si es la misma imagen"""
+        """ call for get the detection and tracking objects, also save if it's required"""
         try:
             self.empty, imagen = self.loadSource()
             if self.empty == True:
@@ -297,6 +311,8 @@ class System:
             pass
     
     def drawDetector(self):
+        """ Modify the image to show the detected boxes
+        """
         if self.empty == True:
             return draw_YOLO(self.frame, (self.boxes, self.sco, self.classIDs, self.ids_nms, # para pintar el detector 
                               self.scales_nms), self.class_names)
@@ -304,12 +320,16 @@ class System:
             return self.frame
         
     def drawTracker(self):
+        """Modify the image to show the tracked objects
+        """
         if self.empty == True:
             return draw_DS(self.frame, self.boxes_ds, self.id_ds)
         else:
             return self.frame
             
     def drawtwo(self):
+        """ Combines drawTracker and drawDetector
+        """
         if self.empty == True : 
             return draw_YOLO(draw_DS(self.frame, self.boxes_ds, self.id_ds), (self.boxes, self.sco, self.classIDs, self.ids_nms, 
                               self.scales_nms), self.class_names)
@@ -317,6 +337,8 @@ class System:
             return self.frame 
         
     def save(self):
+        """ Save video or image
+        """
         self.save_annotations()
         if self.typeSource != 'IMAGE':
             self.out_video.write(cv2.cvtColor(self.drawTracker(), cv2.COLOR_BGR2RGB))
@@ -325,6 +347,8 @@ class System:
             
         
     def save_annotations(self):
+        """ Save the csv for detection and tracking
+        """
         if self.typeSource == 'IMAGE':
             self.boxes_ds = self.boxes 
             self.id_ds = np.zeros((1,len(self.boxes)))        
@@ -340,6 +364,8 @@ class System:
                     )
     
     def realeaseFile(self):
+        """ release the ouputs files
+        """
         try:
             self.annotations_file.close()
             self.out_video.release()
@@ -347,6 +373,8 @@ class System:
             pass
         
     def initSave(self):
+        """" Initializer the ouput files
+        """
         self.realeaseFile()
         time_mark = str(datetime.now())[:-7].replace(' ','_').replace('-','_')
         path_parent = os.path.join('output',time_mark)

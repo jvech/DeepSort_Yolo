@@ -1,3 +1,7 @@
+""" Script to read efficiently tfrecord to train the model
+"""
+
+
 import tensorflow as tf
 from .models import *
 

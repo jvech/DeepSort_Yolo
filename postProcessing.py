@@ -72,6 +72,8 @@ def mean_dist(DataFrame,path_save):
 
     
 def processing_csv(path_save='./output/',*,path_data='./output/2021_03_20_08:45:32/2021_03_20_08:45:32.csv'):
+    """ Make all the processing using a csv as input
+    """
     tail_name = os.path.split(path_data)[1].split('.')[0]
     path_save =  os.path.join(path_save,tail_name)
     DataFrame = pd.read_csv(path_data)

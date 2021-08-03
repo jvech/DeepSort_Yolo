@@ -1,5 +1,4 @@
-"""
-17/3/2021
+"""measure.py
 Module to measure the distance between objects using
 bird's eye view from opencv
 """
@@ -33,6 +32,12 @@ def get_mouse_points(event, x, y, flags, param):
         mouse_pts.append((x, y))
 
 def boxes_to_points(boxes):
+    """ Return the midle-below point of a boundig box
+    Input
+        boxes: [Boxes,x,y,w,h]
+    Output
+        points: [Boxes,\hat{x},\hat{y}]
+    """
     points = []
     for box in boxes:
         (x,y) = (box[2]-(box[2]-box[0])/2,box[3])
@@ -40,6 +45,8 @@ def boxes_to_points(boxes):
     return  points
 
 class Measure:
+    """ Class to measure the real world distance between points that comming from an image
+    """
     def __init__(self, frame,dis_x=2,dis_y=2,number_points=5):
         """
         Init the referencial points to stimate homography
@@ -100,6 +107,8 @@ class Measure:
         return birds_point[0][0]
 
     def plot_point_to_birds_view(self,points):
+        """transform multiple point to real world coordenate
+        """
         birdsPont = []
         for  point in points:
             (xb,yb) = self.transform_point_to_birds_view(np.float32(np.array([[point]])))
@@ -107,6 +116,8 @@ class Measure:
         return np.array(birdsPont)
 
     def plot_image(self,Birdspoints):
+        """Show transformed image in birds view
+        """
         self.image = np.copy(self.templateIMG)
         for point in Birdspoints:
             cv2.circle(self.image, (point[0], point[1]), 5, (0, 0, 255), 10)
@@ -114,12 +125,16 @@ class Measure:
         cv2.waitKey(1)
 
     def unit_length(self):
+        """ Calculate the unit of each axis
+        """
         points = np.float32(np.array([[mouse_pts[0],mouse_pts[1],mouse_pts[3]]]))
         warped_pt= cv2.perspectiveTransform(points,self.Matrix)[0]
         self.dw = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
         self.dh= np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
 
     def distance_real_world(self,point1,point2):
+        """calculate the distance  using euclidean distance
+        """
         (x1,y1) = point1
         (x2,y2) = point2
         return np.sqrt((((x1-x2)/self.dw)*self.dis_x)**2 + ((((y1-y2)/self.dh)*self.dis_y)**2))

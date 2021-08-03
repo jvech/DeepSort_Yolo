@@ -1,3 +1,7 @@
+""" Helpers function to manage images and outpus from yolov3
+"""
+
+
 from absl import logging
 import numpy as np
 import tensorflow as tf

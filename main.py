@@ -1,3 +1,7 @@
+""" main.py
+script to initialize the interface
+"""
+
 import tkinter as  tk
 from interface import App
 

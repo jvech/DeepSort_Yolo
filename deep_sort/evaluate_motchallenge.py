@@ -1,4 +1,7 @@
 # vim: expandtab:ts=4:sw=4
+
+""" Script to evaluate the tracker in MOT database
+"""
 import argparse
 import os
 import deep_sort_app

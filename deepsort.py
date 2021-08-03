@@ -1,3 +1,7 @@
+""" Script that handles the deepsort algorithm
+"""
+
+
 from deep_sort.deep_sort import nn_matching
 from deep_sort.deep_sort.tracker import Tracker 
 from deep_sort.application_util.preprocessing import non_max_suppression
@@ -6,6 +10,8 @@ import numpy as np
 
 
 class deepsort_rbc():
+    """ Class to handle the deepsort algorithm
+    """
     def __init__(self):
 
         self.metric = nn_matching.NearestNeighborDistanceMetric("cosine",.5,30) #metric, matching_threshold, budget
