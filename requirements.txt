@@ -7,5 +7,5 @@ tqdm
 seaborn
 pillow
 imutils 
-tensorflow-probability
+tensorflow-probability==0.14.1
 tk
