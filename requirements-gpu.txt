@@ -1,4 +1,5 @@
 keras==2.6.0
+tensorflow==2.6.0
 tensorflow-gpu==2.6.0
 numpy
 opencv-python>=4.1.1.26
